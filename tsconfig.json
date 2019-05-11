@@ -1,0 +1,15 @@
+{
+    "compilerOptions": {
+        "allowJs": false,
+        "declaration": true,
+        "module": "CommonJS",
+        "moduleResolution": "node",
+        "newLine": "lf",
+        "outDir": "./lib",
+        "strict": true,
+        "target": "ES2017"
+    },
+    "include": [
+        "./src/**/*"
+    ]
+}

@@ -1,0 +1,76 @@
+{
+  "name": "meridvia",
+  "version": "1.0.0",
+  "description": "Lifecycle management for asynchronous data fetch actions in javascript single page applications. Framework agnostic. Features include: Fetch only the data that you really need while the user clicks around; Caching of data; Refreshing data as it becomes stale; Clearing out data that is no longer need to reduce memory usage. Integrates well with React and Redux, but not required.",
+  "main": "lib/index.js",
+  "types": "lib/index.d.ts",
+  "files": [
+    "lib",
+    "LICENSE"
+  ],
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/Joris-van-der-Wel/meridvia.git"
+  },
+  "bugs": {
+    "url": "https://github.com/Joris-van-der-Wel/meridvia/issues"
+  },
+  "homepage": "https://github.com/Joris-van-der-Wel/meridvia#readme",
+  "scripts": {
+    "lint": "eslint --ext .js,.ts src test",
+    "build": "rm -rf lib && tsc",
+    "prepublish": "npm run build",
+    "test:unit": "mocha \"test/unit/**/*.test.js\"",
+    "test:unit:coverage": "nyc --all mocha \"test/unit/**/*.test.js\"",
+    "test:unit:coveralls": "npm run test:unit:coverage && nyc report --reporter=text-lcov | coveralls",
+    "test:integration:prepare": "rm -rf test-generated && tsc -p test/integration/reduxAndRouter5",
+    "test:integration": "npm run test:integration:prepare && mocha \"test/integration/**/*.test.js\"",
+    "test:coverage-report": "nyc report --reporter=html",
+    "test": "npm run lint && npm run build && npm run test:unit:coverage && npm run test:integration && npm run test:coverage-report"
+  },
+  "keywords": [
+    "action",
+    "api",
+    "async",
+    "asynchronous",
+    "cache",
+    "caching",
+    "dispatcher",
+    "fetch",
+    "flux",
+    "garbage collection",
+    "gc",
+    "lifecycle",
+    "react",
+    "redux",
+    "resource",
+    "state"
+  ],
+  "author": "Joris van der Wel <joris@jorisvanderwel.com>",
+  "license": "MIT",
+  "dependencies": {
+    "immutable": ">= 3"
+  },
+  "devDependencies": {
+    "@typescript-eslint/eslint-plugin": "^1.7.0",
+    "@typescript-eslint/parser": "^1.7.0",
+    "chai": "^4.2.0",
+    "chai-as-promised": "^7.1.1",
+    "coveralls": "^3.0.3",
+    "eslint": "^5.16.0",
+    "eslint-plugin-import": "^2.17.2",
+    "mocha": "^6.1.4",
+    "mocha-sugar-free": "^1.4.0",
+    "nyc": "^14.0.0",
+    "redux": "^4.0.1",
+    "redux-thunk": "^2.3.0",
+    "router5": "^7.0.2",
+    "sinon": "^7.3.2",
+    "typescript": "^3.4.5"
+  },
+  "nyc": {
+    "include": [
+      "lib/**/*.js"
+    ]
+  }
+}
