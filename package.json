@@ -1,12 +1,14 @@
 {
   "name": "meridvia",
   "version": "1.0.0",
-  "description": "Lifecycle management for asynchronous data fetch actions in javascript single page applications. Framework agnostic. Features include: Fetch only the data that you really need while the user clicks around; Caching of data; Refreshing data as it becomes stale; Clearing out data that is no longer need to reduce memory usage. Integrates well with React and Redux, but not required.",
+  "description": "Lifecycle management for asynchronous data in javascript single page applications. Framework agnostic.",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
+  "runkitExampleFilename": "docs/snippets/console_log.js",
   "files": [
     "lib",
-    "LICENSE"
+    "LICENSE",
+    "README.md"
   ],
   "repository": {
     "type": "git",
@@ -17,9 +19,10 @@
   },
   "homepage": "https://github.com/Joris-van-der-Wel/meridvia#readme",
   "scripts": {
-    "lint": "eslint --ext .js,.ts src test",
+    "lint": "eslint --ext .js,.ts src test docs",
+    "docs:build": "node docs/build.js",
     "build": "rm -rf lib && tsc",
-    "prepublishOnly": "npm run build",
+    "prepublishOnly": "npm run build && npm run docs:build",
     "test:unit": "mocha \"test/unit/**/*.test.js\"",
     "test:unit:coverage": "nyc --all mocha \"test/unit/**/*.test.js\"",
     "test:unit:coveralls": "npm run test:unit:coverage && nyc report --reporter=text-lcov | coveralls",
@@ -59,10 +62,16 @@
     "coveralls": "^3.0.3",
     "eslint": "^5.16.0",
     "eslint-plugin-import": "^2.17.2",
+    "handlebars": "^4.1.2",
+    "jsdom": "^15.1.0",
     "mocha": "^6.1.4",
     "mocha-sugar-free": "^1.4.0",
     "nyc": "^14.0.0",
+    "react": "^16.8.6",
+    "react-dom": "^16.8.6",
+    "react-redux": "^7.0.3",
     "redux": "^4.0.1",
+    "redux-promise": "^0.6.0",
     "redux-thunk": "^2.3.0",
     "router5": "^7.0.2",
     "sinon": "^7.3.2",
