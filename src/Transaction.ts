@@ -33,7 +33,7 @@ export class Transaction<DISPATCHED, ACTION> {
 
         if (this._ended) {
             throw error(
-                'IllegalState',
+                'IllegalStateError',
                 'This fetch function is no longer valid. The fetch() function should only be called during ' +
                 'a session transaction. For example: `mySession(fetch => { fetch("something") })`'
             );

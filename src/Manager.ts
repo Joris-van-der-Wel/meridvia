@@ -73,7 +73,7 @@ export class Manager<DISPATCHED, ACTION> {
     }
 
     public createSession(): MeridviaSession<DISPATCHED> {
-        assert(!this._destroyed, 'IllegalState', 'This manager has been destroyed');
+        assert(!this._destroyed, 'IllegalStateError', 'This manager has been destroyed');
         const session = createSession<DISPATCHED, ACTION>(this);
         this._sessions = this._sessions.add(session);
         return session;
@@ -84,7 +84,7 @@ export class Manager<DISPATCHED, ACTION> {
     }
 
     public registerResource(options: ResourceDefinition<ACTION>): void {
-        assert(!this._destroyed, 'IllegalState', 'This manager has been destroyed');
+        assert(!this._destroyed, 'IllegalStateError', 'This manager has been destroyed');
         const {
             name,
             initStorage = DEFAULT_INIT_STORAGE,
@@ -208,7 +208,7 @@ export class Manager<DISPATCHED, ACTION> {
     }
 
     public refresh(resourceName: string | undefined, params: ActionParams | undefined): number {
-        assert(!this._destroyed, 'IllegalState', 'This manager has been destroyed');
+        assert(!this._destroyed, 'IllegalStateError', 'This manager has been destroyed');
         const now = Date.now();
         let matches = 0;
         const compositeError = createCompositeError();

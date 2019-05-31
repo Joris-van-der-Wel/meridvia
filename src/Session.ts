@@ -29,14 +29,14 @@ export class Session<DISPATCHED, ACTION> {
     }
 
     public execute(callback: TransactionCallback<DISPATCHED>): any {
-        assert(!this._destroyed, 'IllegalState', 'This session has been destroyed');
-        assert(typeof callback === 'function', 'IllegalState', 'callback must be a function');
+        assert(!this._destroyed, 'IllegalStateError', 'This session has been destroyed');
+        assert(typeof callback === 'function', 'TypeError', 'callback must be a function');
 
         if (this._activeTransaction) {
             if (this._manager.allowTransactionAbort) {
                 const abortedTransaction = this._activeTransaction;
                 abortedTransaction.abort(error(
-                    'IllegalState',
+                    'MeridviaTransactionAborted',
                     'The session transaction has been aborted because a new session transaction has been started.'
                 ));
 
@@ -47,7 +47,7 @@ export class Session<DISPATCHED, ACTION> {
                 this._activeTransaction = null;
             }
             else {
-                throw error('IllegalState', 'A previous transaction is still in progress');
+                throw error('IllegalStateError', 'A previous transaction is still in progress');
             }
         }
 
@@ -56,7 +56,7 @@ export class Session<DISPATCHED, ACTION> {
         this._activeTransaction = transaction;
 
         const fetch = (resourceName: string, params: ActionParams = {}): DISPATCHED => {
-            assert(!this._destroyed, 'IllegalState', 'This session has been destroyed');
+            assert(!this._destroyed, 'IllegalStateError', 'This session has been destroyed');
             return transaction.fetch(resourceName, params);
         };
 
