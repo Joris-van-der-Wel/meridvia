@@ -89,14 +89,14 @@ export class Manager<DISPATCHED, ACTION> {
             name,
             initStorage = DEFAULT_INIT_STORAGE,
             fetch,
-            clear,
+            clear = null,
             maximumStaleness = 0,
             cacheMaxAge = 0,
             refreshInterval = 0,
         } = options;
         assert(typeof name === 'string', 'TypeError', '`name` must be a string');
         assert(typeof fetch === 'function', 'TypeError', '`fetch` must be a function');
-        assert(typeof clear === 'function', 'TypeError', '`clear` must be a function');
+        assert(typeof clear === 'function' || clear === null, 'TypeError', '`clear` must be a function or null');
         assert(!this._resources.has(name), 'ValueError', 'The given `name` is already in use');
         const maximumStalenessMs = parseTimeInterval(maximumStaleness, 'maximumStaleness');
         const cacheMaxAgeMs = parseTimeInterval(cacheMaxAge, 'cacheMaxAge');

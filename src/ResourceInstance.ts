@@ -147,8 +147,11 @@ export class ResourceInstance<DISPATCHED, ACTION> {
         // this method should never throw; otherwise we might be skipping subsequent cleanup actions
         try {
             this.deferredCleanupFetch.invoke();
-            const action = this.resource.clear(this.resourceInstanceKey.toParams(), {storage: this.userStorage});
-            dispatcher(action);
+
+            if (this.resource.clear) {
+                const action = this.resource.clear(this.resourceInstanceKey.toParams(), {storage: this.userStorage});
+                dispatcher(action);
+            }
         }
         catch (err) {
             /* istanbul ignore else */

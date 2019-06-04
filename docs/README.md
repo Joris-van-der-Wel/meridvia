@@ -102,11 +102,11 @@ __Return value__: A new {{{manager}}} instance
 | ------------------------- | ------------------------- | ------------ | ------------------------------------------------------------- |
 | options.name              | string                    | __required__ | A unique {{{resourceName}}} for this {{{resource}}}. The same name can later be used to request this {{{resource}}}. |
 | options.fetch             | function(params, options) | __required__ | The {{{fetchCallback}}} for this {{{resource}}}. Called whenever the asynchronous data should be retrieved. |
-| options.clear             | function(params, options) | __required__ | The {{{clearCallback}}} for this {{{resource}}}. Called whenever asynchronous data that has been previously retrieved, is no longer in use. |
+| options.clear             | function(params, options) | `null`       | The {{{clearCallback}}} for this {{{resource}}}. Called whenever asynchronous data that has been previously retrieved, is no longer in use. |
 | options.initStorage       | function(params)          | () => ({})   | Called the first time a {{{resource}}} is fetched, the return value is available to the other actions of the same {{{resource}}}. |
-| options.maximumStaleness  | {{{timeInterval}}}          | 0            | The maximum amount of time that the data of a fetched {{{resource}}} may be reused in a future {{{transaction}}}. A value of 0 means forever/infinite. |
-| options.cacheMaxAge       | {{{timeInterval}}}          | 0            | The maximum amount of time that the data of a fetched {{{resource}}} may be cached if no {{{session}}} is using the {{{resource}}}. A value of 0 disables caching. |
-| options.refreshInterval   | {{{timeInterval}}}          | 0            | How often to fetch the {{{resource}}} again, as long as there is a {{{session}}} using this {{{resource}}}. A value of 0 disables refreshing. |
+| options.maximumStaleness  | {{{timeInterval}}}        | 0            | The maximum amount of time that the data of a fetched {{{resource}}} may be reused in a future {{{transaction}}}. A value of 0 means forever/infinite. |
+| options.cacheMaxAge       | {{{timeInterval}}}        | 0            | The maximum amount of time that the data of a fetched {{{resource}}} may be cached if no {{{session}}} is using the {{{resource}}}. A value of 0 disables caching. |
+| options.refreshInterval   | {{{timeInterval}}}        | 0            | How often to fetch the {{{resource}}} again, as long as there is a {{{session}}} using this {{{resource}}}. A value of 0 disables refreshing. |
 
 __Return value__: `undefined` \
 __Throws__: {{{IllegalStateError}}} if the {{{manager}}} has been destroyed \

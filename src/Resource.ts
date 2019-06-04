@@ -4,7 +4,7 @@ interface ConstructorArgs<ACTION> {
     name: string;
     initStorage: InitStorageCallback;
     fetch: FetchCallback<ACTION>;
-    clear: ClearCallback<ACTION>;
+    clear: ClearCallback<ACTION> | null;
     maximumStalenessMs: number;
     cacheMaxAgeMs: number;
     refreshIntervalMs: number;
@@ -14,7 +14,7 @@ export class Resource<ACTION> {
     public name: string;
     public initStorage: InitStorageCallback;
     public fetch: FetchCallback<ACTION>;
-    public clear: ClearCallback<ACTION>;
+    public clear: ClearCallback<ACTION> | null;
     public maximumStalenessMs: number;
     public cacheMaxAgeMs: number;
     public refreshIntervalMs: number;

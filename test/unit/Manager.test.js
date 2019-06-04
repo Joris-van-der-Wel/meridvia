@@ -415,6 +415,23 @@ describe('Manager', () => {
             await isRejected(dispatcher.firstCall.args[0], Error, 'Error from test! photoResource.fetch()');
             deq(await dispatcher.secondCall.args[0], {type: 'FETCH_PHOTO', params: {id: 987}, result: {url: 'data:,'}});
         });
+
+        it('Should allow for the clear callback to be null', async () => {
+            manager.resource({
+                name: 'bicycle',
+                fetch: sinon.spy(params => {
+                    return {type: 'FETCH_BICYCLE', params, result: {wheels: 5}};
+                }),
+            });
+
+            await session(async fetch => {
+                await fetch('bicycle', {id: 2});
+            });
+
+            await session(async fetch => {
+                await fetch('bicycle', {id: 3});
+            });
+        });
     });
 
     describe('Transaction aborting', () => {

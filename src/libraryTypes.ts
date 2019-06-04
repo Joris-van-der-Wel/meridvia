@@ -30,7 +30,7 @@ export interface ResourceDefinition<ACTION> {
     name: string;
     initStorage?: InitStorageCallback;
     fetch: FetchCallback<ACTION>;
-    clear: ClearCallback<ACTION>;
+    clear: ClearCallback<ACTION> | null;
     maximumStaleness?: number | string;
     cacheMaxAge?: number | string;
     refreshInterval?: number | string;
