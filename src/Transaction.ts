@@ -5,14 +5,16 @@ import {Manager} from './Manager';
 import {Session} from './Session';
 import {ResourceInstanceKey} from './ResourceInstanceKey';
 import {ResourceInstance} from './ResourceInstance';
-import {ImmutableSet} from './typing';
+import {ImmutableSet, isPromise} from './typing';
 import {ActionParams} from './libraryTypes';
+import {ExplicitPromise, createExplicitPromise} from './explicitPromise';
 
 export class Transaction<DISPATCHED, ACTION> {
     private readonly _manager: Manager<DISPATCHED, ACTION>;
     private readonly _session: Session<DISPATCHED, ACTION>;
     private readonly _transactionBeginMs: number;
     private _aborted: Error | null;
+    private _abortionPromise: ExplicitPromise<void, Error> | null;
     private _ended: boolean;
     private _resourceInstances: ImmutableSet<ResourceInstance<DISPATCHED, ACTION>>;
 
@@ -21,6 +23,9 @@ export class Transaction<DISPATCHED, ACTION> {
         this._session = session;
         this._transactionBeginMs = transactionBeginMs;
         this._aborted = null;
+        // This value is not set so that we avoid rejecting if a promise is not returned at
+        // all, to avoid UnhandledPromiseRejectionWarning
+        this._abortionPromise = null;
         this._ended = false;
         this._resourceInstances = Immutable.Set() as ImmutableSet<ResourceInstance<DISPATCHED, ACTION>>;
         Object.seal(this);
@@ -81,7 +86,22 @@ export class Transaction<DISPATCHED, ACTION> {
         //         const userId = await fetch('session/active-user-id')
         //         await fetch('session/user', {userId})
         //     })
-        return resourceInstance.fetchReturnValue as DISPATCHED; // this value is always DISPATCHED if performFetchAction has been successful
+        // this value is always DISPATCHED if performFetchAction has been successful
+        const returnValue = resourceInstance.fetchReturnValue as DISPATCHED;
+
+        if (isPromise(returnValue)) {
+            if (!this._abortionPromise) {
+                this._abortionPromise = createExplicitPromise();
+            }
+
+            return Promise.race([
+                this._abortionPromise.promise,
+                returnValue,
+            ]) as any as DISPATCHED;
+        }
+        else {
+            return returnValue;
+        }
     }
 
     // reached the end of the transaction callback
@@ -108,9 +128,14 @@ export class Transaction<DISPATCHED, ACTION> {
 
     public abort(reason: Error): void {
         this._aborted = reason;
+
+        if (this._abortionPromise) {
+            this._abortionPromise.reject(reason);
+        }
     }
 
-    public destroyedSession(): void {
+    public destroyedSession(reason: Error): void {
+        this.abort(reason);
         for (const resourceInstance of this._resourceInstances) {
             resourceInstance.clearActiveForSession(this._session);
         }

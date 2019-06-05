@@ -27,6 +27,7 @@ const TERMS = Object.freeze({
     TypeError: '`TypeError`',
     ValueError: '`ValueError`',
     CompositeError: '`CompositeError`',
+    MeridviaTransactionAborted: '`MeridviaTransactionAborted`',
     sessionApi: '[Session API](#session-api)',
     createManager: '[`createManager`](#createmanagerdispatcher-options--manager)',
     exportCreateManager: '[`createManager([dispatcher], [options]) ⇒ Manager`](#createmanagerdispatcher-options--manager)',

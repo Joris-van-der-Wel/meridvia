@@ -394,7 +394,7 @@ If the `allowTransactionAbort` option passed to [`createManager`](#createmanager
 
 __Return value__: The value returned by the [__`dispatcher`__ callback](#createmanagerdispatcher-options--manager) \
 __Throws__: `MeridviaTransactionAborted` if the __transaction__ has been aborted (can only occur if `allowTransactionAbort` is `true`) \
-__Throws__: `IllegalStateError` if the __transaction__ has been aborted \
+__Throws__: `MeridviaTransactionAborted` if the session has been destroyed \
 __Throws__: `IllegalStateError` if the __transaction__ has ended \
 __Throws__: `ValueError` if the given __resource name__ has not been registered \
 __Throws__: Any thrown value from the [__`dispatcher`__ callback](#createmanagerdispatcher-options--manager)

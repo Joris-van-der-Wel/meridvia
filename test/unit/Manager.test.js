@@ -5,6 +5,7 @@ const Immutable = require('immutable');
 
 const {strictEqual: eq, notStrictEqual: neq, deepEqual: deq, throws, isRejected} = require('../assert');
 const {createManager} = require('../..');
+require('../failOnUnhandledRejection')();
 
 const originalSetTimeout = setTimeout;
 const delay = async ms => new Promise(resolve => originalSetTimeout(resolve, ms));
@@ -504,6 +505,97 @@ describe('Manager', () => {
                 deq(userResource.clear.args[1][0], {id: 1});
 
                 eq(milestones, 3); // to verify that session() is not eating errors by accident
+            }
+            finally {
+                session.destroy();
+            }
+        });
+
+        it('Should abort the promise of a pending request', async () => {
+            const manager = createManager(dispatcher, {allowTransactionAbort: true});
+            manager.resource(commentResource);
+
+            const session = manager.createSession();
+            try {
+                await session(async fetch0 => {
+                    const promise = fetch0('comment', {id: 123});
+
+                    await session(async fetch1 => {
+                        const err0 = throws(() => fetch0('user', {id: -1}), Error, /session.*aborted.*new.*session.*started/i);
+                        const err1 = await isRejected(promise, Error, /session.*aborted.*new.*session.*started/i);
+                        eq(err0.name, 'MeridviaTransactionAborted');
+                        eq(err1.name, 'MeridviaTransactionAborted');
+
+                        const comment = await fetch1('comment', {id: 123});
+                        deq(comment, {dispatched: {type: 'FETCH_COMMENT', params: {id: 123}, result: {content: 'Hello Hello'}}});
+                    });
+                });
+            }
+            finally {
+                session.destroy();
+            }
+        });
+
+        it('Should abort a transaction if the session is destroyed', async () => {
+            const manager = createManager(dispatcher, {allowTransactionAbort: true});
+            manager.resource(commentResource);
+
+            const session = manager.createSession();
+            try {
+                await session(async fetch => {
+                    const promise0 = fetch('comment', {id: 123});
+                    const promise1 = fetch('comment', {id: 456});
+
+                    session.destroy();
+                    const err0 = throws(() => fetch('user', {id: -1}), Error, /session.*aborted.*because.*destroyed/i);
+                    const err1 = await isRejected(promise0, Error, /session.*aborted.*because.*destroyed/i);
+                    const err2 = await isRejected(promise1, Error, /session.*aborted.*because.*destroyed/i);
+                    eq(err0.name, 'MeridviaTransactionAborted');
+                    eq(err1.name, 'MeridviaTransactionAborted');
+                    eq(err2.name, 'MeridviaTransactionAborted');
+                });
+            }
+            finally {
+                session.destroy();
+            }
+        });
+
+        it('Should abort a transaction if the session is destroyed even if allowTransactionAbort is false', async () => {
+            const manager = createManager(dispatcher, {allowTransactionAbort: false});
+            manager.resource(commentResource);
+
+            const session = manager.createSession();
+            try {
+                await session(async fetch => {
+                    const promise = fetch('comment', {id: 123});
+
+                    session.destroy();
+                    const err0 = throws(() => fetch('user', {id: -1}), Error, /session.*aborted.*because.*destroyed/i);
+                    const err1 = await isRejected(promise, Error, /session.*aborted.*because.*destroyed/i);
+                    eq(err0.name, 'MeridviaTransactionAborted');
+                    eq(err1.name, 'MeridviaTransactionAborted');
+                });
+            }
+            finally {
+                session.destroy();
+            }
+        });
+
+        it('Should abort a transaction if the manager is destroyed', async () => {
+            const manager = createManager(dispatcher, {allowTransactionAbort: false});
+            manager.resource(commentResource);
+
+            const session = manager.createSession();
+            try {
+                await session(async fetch => {
+                    const promise = fetch('comment', {id: 123});
+
+                    manager.destroy();
+                    const err0 = throws(() => fetch('user', {id: -1}), Error, /session.*aborted.*because.*destroyed/i);
+                    const err1 = await isRejected(promise, Error, /session.*aborted.*because.*destroyed/i);
+                    eq(err0.name, 'MeridviaTransactionAborted');
+                    eq(err1.name, 'MeridviaTransactionAborted');
+                });
             }
             finally {
                 session.destroy();

@@ -266,8 +266,8 @@ If the `allowTransactionAbort` option passed to {{{createManager}}} was set to `
 | params                    | object \| Immutable.Map  | The {{{resourceParams}}} to pass on to the {{{fetchCallback}}} |
 
 __Return value__: The value returned by the {{{dispatcherCallback}}} \
-__Throws__: `MeridviaTransactionAborted` if the {{{transaction}}} has been aborted (can only occur if `allowTransactionAbort` is `true`) \
-__Throws__: {{{IllegalStateError}}} if the {{{transaction}}} has been aborted \
+__Throws__: {{{MeridviaTransactionAborted}}} if the {{{transaction}}} has been aborted (can only occur if `allowTransactionAbort` is `true`) \
+__Throws__: {{{MeridviaTransactionAborted}}} if the session has been destroyed \
 __Throws__: {{{IllegalStateError}}} if the {{{transaction}}} has ended \
 __Throws__: {{{ValueError}}} if the given {{{resourceName}}} has not been registered \
 __Throws__: Any thrown value from the {{{dispatcherCallback}}}

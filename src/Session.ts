@@ -56,7 +56,6 @@ export class Session<DISPATCHED, ACTION> {
         this._activeTransaction = transaction;
 
         const fetch = (resourceName: string, params: ActionParams = {}): DISPATCHED => {
-            assert(!this._destroyed, 'IllegalStateError', 'This session has been destroyed');
             return transaction.fetch(resourceName, params);
         };
 
@@ -104,11 +103,17 @@ export class Session<DISPATCHED, ACTION> {
             return false;
         }
 
+        const abortReason = error(
+            'MeridviaTransactionAborted',
+            'The session transaction has been aborted because the session has been destroyed.'
+        );
+
         for (const transaction of this._transactionsToCleanUp) {
-            transaction.destroyedSession();
+            transaction.destroyedSession(abortReason);
         }
+
         if (this._activeTransaction) {
-            this._activeTransaction.destroyedSession();
+            this._activeTransaction.destroyedSession(abortReason);
         }
 
         this._activeTransaction = null;
