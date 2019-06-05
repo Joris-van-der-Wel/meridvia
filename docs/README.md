@@ -5,7 +5,8 @@ Meridvia
 * [Installation](#installation)
 * [How it works](#how-it-works)
 * [API Reference](#api-reference)
-* [Example: React Lifecycle methods](#example-react-lifecycle-methods)
+* [Example: React Lifecycle methods and setState](#example-react-lifecycle-methods-and-setstate)
+* [Example: React Lifecycle methods and redux](#example-react-lifecycle-methods-and-redux)
 
 This library helps with managing the lifecycle of data fetched from a resource. For example when there is a HTTP resource that you need data from, this library will tell you when to to perform the actual request to fetch the data and when to clear/cleanup the data. 
 
@@ -310,14 +311,26 @@ __Throws__: No
 
 --------------------------------------------------------------------------------
 
-Example: React Lifecycle methods
---------------------------------
+Example: React Lifecycle methods and setState
+---------------------------------------------
 ```javascript
-{{{snippets.react.scriptSource}}}
+{{{snippets.react_only.scriptSource}}}
 ```
 
 Output:
 
 ```
-{{{snippets.react.output}}}
+{{{snippets.react_only.output}}}
+```
+
+Example: React Lifecycle methods and redux
+------------------------------------------
+```javascript
+{{{snippets.react_redux.scriptSource}}}
+```
+
+Output:
+
+```
+{{{snippets.react_redux.output}}}
 ```

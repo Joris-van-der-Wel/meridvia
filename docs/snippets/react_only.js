@@ -1,36 +1,29 @@
 /*
 This example demonstrates how this library could be used to fetch and
-display the details of a "user account" using redux and the react
-lifecycle methods componentDidMount, componentWillUnmount and
-componentDidUpdate.
+display the details of a "user account" using the react
+lifecycle methods componentDidMount, componentWillUnmount,
+componentDidUpdate and then store the result in the react component
+state.
 
 This example includes:
 * A fake API which pretends to fetch details of a user
   account using a http request
-* A redux store which stores the user account details
-* A reducer for the redux store that handles fetch and clear
-  actions for the details of a specific user account
 * A meridvia resource manager on which we register a resource for
   the user account details
 * A react component which lets the resource manager know which
-  resources it needs using a meridvia session.
-* A react-redux container which passes the user details from the
-  state store to the component.
+  resources it needs using a meridvia session and stores the result
 * Some logging to demonstrate what is going on
 
 This is a trivial example to demonstrate one way to integrate this
-library with react and redux. It has been kept simple on purpose,
-however the strength of this library becomes most apparent in more
-complex code bases, for example: When the same resource is used in
-multiple places in the code base; When resources should be cached;
-When data has to be refreshed periodically; Et cetera.
+library with react. It has been kept simple on purpose, however the
+strength of this library becomes most apparent in more complex code
+bases, for example: When the same resource is used in multiple
+places in the code base; When resources should be cached; When data
+has to be refreshed periodically; Et cetera.
 */
 
 const {Component, createElement} = require('react');
 const ReactDOM = require('react-dom');
-const {createStore, combineReducers, applyMiddleware} = require('redux');
-const {Provider: ReduxProvider, connect} = require('react-redux');
-const {default: promiseMiddleware} = require('redux-promise');
 const {createManager} = require('meridvia');
 
 const myApi = {
@@ -56,64 +49,28 @@ const myApi = {
     },
 };
 
-// In the state store, userDetailsById contains the
-// details of a user, indexed by the userId:
-//   userDetailsById[userId] = {name: ..., email: ...}
-const userDetailsByIdReducer = (state = {}, action) => {
-    if (action.type === 'FETCH_USER_DETAILS') {
-        // In this example we only store the resolved
-        // value of the api call. However you could also
-        // store an error message if the api call fails,
-        // or an explicit flag to indicate an api call is
-        // in progress.
-        const newState = Object.assign({}, state);
-        newState[action.userId] = action.result;
-        return newState;
-    }
-    else if (action.type === 'CLEAR_USER_DETAILS') {
-        // Completely remove the data from the state store.
-        // `delete` must be used to avoid memory leaks.
-        const newState = Object.assign({}, state);
-        delete newState[action.userId];
-        return newState;
-    }
-    return state;
-};
-
-// The reducer used by our redux store
-const rootReducer = combineReducers({
-    userDetailsById: userDetailsByIdReducer,
-});
-
-const setupResourceManager = (dispatch) => {
-    // The resource manager will pass on the return value of `fetch`
-    // and `clear` to the `dispatch` callback here
-    const resourceManager = createManager(dispatch);
+const setupResourceManager = () => {
+    // Set the `dispatch` callback so that the return value of
+    // the "fetch" callback (a promise that will resolve to the
+    // api result) is returned as-is from the request function during
+    // the session.
+    // (The library will cache this value as appropriate).
+    const dispatcher = value => value;
+    const resourceManager = createManager(dispatcher, {
+        // Because we are using promises during the transaction, it is
+        // possible that the transactions might overlap. Normally this
+        // is not allowed. By setting this option to true, the
+        // older transaction will be aborted instead.
+        allowTransactionAbort: true,
+    });
 
     resourceManager.resource({
         name: 'userDetails',
         fetch: async (params) => {
-            // This function returns a promise. In this example
-            // we are using the redux-promise middleware. Which
-            // will resolve the promise before passing the action
-            // on to our reducers.
-
             console.log('Resource userDetails: fetch', params);
             const {userId} = params;
             const result = await myApi.userDetails(userId);
-            return {
-                type: 'FETCH_USER_DETAILS',
-                userId,
-                result,
-            };
-        },
-        clear: (params) => {
-            console.log('Resource userDetails: clear', params);
-            const {userId} = params;
-            return {
-                type: 'CLEAR_USER_DETAILS',
-                userId,
-            };
+            return result;
         },
     });
 
@@ -121,6 +78,11 @@ const setupResourceManager = (dispatch) => {
 };
 
 class Hello extends Component {
+    constructor(props) {
+        super(props);
+        this.state = {user: null};
+    }
+
     componentDidMount() {
         console.log('<Hello/> componentDidMount');
         // Component is now present in the DOM. Create a new
@@ -149,13 +111,19 @@ class Hello extends Component {
     }
 
     updateResources() {
-        this.session(request => {
-            request('userDetails', {userId: this.props.userId});
+        this.session(async request => {
+            const user = await request('userDetails', {
+                userId: this.props.userId,
+            });
+
+            if (user !== this.state.user) {
+                this.setState({user});
+            }
         });
     }
 
     render() {
-        const {user} = this.props;
+        const {user} = this.state;
         return createElement('div', {className: 'Hello'},
             user ? `Hello ${user.name}` : 'Loading...'
         );
@@ -166,15 +134,9 @@ class Hello extends Component {
         */
     }
 }
-// A react-redux container component
-const HelloContainer = connect((state, props) => ({
-    user: state.userDetailsById[props.userId],
-}))(Hello);
-
 
 const example = () => {
-    const store = createStore(rootReducer, applyMiddleware(promiseMiddleware));
-    const resourceManager = setupResourceManager(store.dispatch);
+    const resourceManager = setupResourceManager();
 
     // Create the container element used by react:
     const container = document.createElement('div');
@@ -198,13 +160,12 @@ const example = () => {
     });
 
     const renderMyApp = userId => {
-        const element = createElement(ReduxProvider, {store},
-            createElement(HelloContainer, {resourceManager, userId}, null)
-        );
+        const element = createElement(Hello, {resourceManager, userId}, null);
+
         /* If you prefer JSX, this is what it would look like:
-        const element = <ReduxProvider store={store}>
-            <HelloContainer resourceManager={resourceManager} userId={userId} />
-        </ReduxProvider>
+        const element = (
+            <Hello resourceManager={resourceManager} userId={userId} />
+        );
         */
         ReactDOM.render(element, container);
     };
