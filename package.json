@@ -1,6 +1,6 @@
 {
   "name": "meridvia",
-  "version": "1.1.0",
+  "version": "1.2.0",
   "description": "Lifecycle management for asynchronous data in javascript single page applications. Framework agnostic.",
   "main": "lib/index.js",
   "types": "lib/index.d.ts",
