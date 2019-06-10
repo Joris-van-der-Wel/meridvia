@@ -36,11 +36,8 @@ export interface ResourceDefinition<ACTION> {
     refreshInterval?: number | string;
 }
 
-
-// The public API, which hides internal functions and avoids users having to worry about `this`:
-export interface MeridviaSession<DISPATCHED>{
-    (callback: TransactionCallback<DISPATCHED>): any;
-    destroy: () => boolean;
+export interface SessionOptions {
+    allowTransactionAbort?: boolean;
 }
 
 export interface ManagerOptions {
@@ -48,13 +45,20 @@ export interface ManagerOptions {
     allowTransactionAbort?: boolean;
 }
 
+// The public API, which hides internal functions and avoids users having to worry about `this`:
+export interface MeridviaSession<DISPATCHED>{
+    (callback: TransactionCallback<DISPATCHED>): any;
+    destroy: () => boolean;
+    allowTransactionAbort: boolean;
+}
+
 export interface MeridviaManager<DISPATCHED, ACTION> {
     destroy(): void;
-    createSession(): MeridviaSession<DISPATCHED>;
+    createSession(options?: SessionOptions): MeridviaSession<DISPATCHED>;
     resource(resource: ResourceDefinition<ACTION>): void;
     resources(resource: ResourceDefinition<ACTION>[]): void;
     cleanupResources(): void;
-    invalidate(resourceName: string, params: ActionParams): number;
-    refresh(resourceName: string, params: ActionParams): number;
+    invalidate(resourceName?: string, params?: ActionParams): number;
+    refresh(resourceName?: string, params?: ActionParams): number;
 }
 

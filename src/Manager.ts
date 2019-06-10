@@ -17,6 +17,7 @@ import {
     ManagerOptions,
     MeridviaManager,
     MeridviaSession,
+    SessionOptions,
 } from './libraryTypes';
 
 const DEFAULT_DISPATCHER = <DISPATCHED, ACTION>(value: ACTION): DISPATCHED => value as any as DISPATCHED;
@@ -72,9 +73,12 @@ export class Manager<DISPATCHED, ACTION> {
 
     }
 
-    public createSession(): MeridviaSession<DISPATCHED> {
+    public createSession(options: SessionOptions): MeridviaSession<DISPATCHED> {
         assert(!this._destroyed, 'IllegalStateError', 'This manager has been destroyed');
-        const session = createSession<DISPATCHED, ACTION>(this);
+        const allowTransactionAbort = typeof options.allowTransactionAbort === 'boolean'
+            ? options.allowTransactionAbort
+            : this.allowTransactionAbort;
+        const session = createSession<DISPATCHED, ACTION>(this, {allowTransactionAbort});
         this._sessions = this._sessions.add(session);
         return session;
     }
@@ -197,7 +201,7 @@ export class Manager<DISPATCHED, ACTION> {
         }
     }
 
-    public invalidate(resourceName: string | undefined, params: ActionParams | undefined): number {
+    public invalidate(resourceName?: string, params?: ActionParams): number {
         let matches = 0;
         for (const resourceInstance of this.findInstances(resourceName, params)) {
             resourceInstance.forceInvalidated = true;
@@ -207,7 +211,7 @@ export class Manager<DISPATCHED, ACTION> {
         return matches;
     }
 
-    public refresh(resourceName: string | undefined, params: ActionParams | undefined): number {
+    public refresh(resourceName?: string, params?: ActionParams): number {
         assert(!this._destroyed, 'IllegalStateError', 'This manager has been destroyed');
         const now = Date.now();
         let matches = 0;
@@ -243,7 +247,7 @@ export const createManager = <DISPATCHED, ACTION> (
     // The public API, which hides internal functions and avoids users having to worry about `this`:
     return {
         destroy: (): void => manager.destroy(),
-        createSession: (): MeridviaSession<DISPATCHED> => manager.createSession(),
+        createSession: (options: SessionOptions = {}): MeridviaSession<DISPATCHED> => manager.createSession(options),
         resource: (resource: ResourceDefinition<ACTION>): void => manager.registerResource(resource),
         resources: (resources: ResourceDefinition<ACTION>[]): void => {
             for (const resource of resources) {
@@ -253,7 +257,9 @@ export const createManager = <DISPATCHED, ACTION> (
         cleanupResources: (): void => {
             manager.cleanupResources();
         },
-        invalidate: (resourceName: string, params: ActionParams): number => manager.invalidate(resourceName, params),
-        refresh: (resourceName: string, params: ActionParams): number => manager.refresh(resourceName, params),
+        invalidate: (resourceName?: string, params?: ActionParams): number =>
+            manager.invalidate(resourceName, params),
+        refresh: (resourceName?: string, params?: ActionParams): number =>
+            manager.refresh(resourceName, params),
     };
 };

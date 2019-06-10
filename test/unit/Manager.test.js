@@ -437,12 +437,30 @@ describe('Manager', () => {
 
     describe('Transaction aborting', () => {
         it('Should not allow overlapping transactions if allowTransactionAbort=false (synchronous)', () => {
+            eq(session.allowTransactionAbort, false);
             session(fetch => {
                 throws(() => session(fetch => {}), Error, /previous.*transaction.*in.*progress/i);
             });
         });
 
+        it('Should not allow overlapping transactions if allowTransactionAbort=false on the session overrides the Manager', () => {
+            const manager = createManager(dispatcher, {allowTransactionAbort: true});
+            try {
+                const session = manager.createSession({allowTransactionAbort: false});
+
+                eq(session.allowTransactionAbort, false);
+                session(fetch => {
+                    throws(() => session(fetch => {
+                    }), Error, /previous.*transaction.*in.*progress/i);
+                });
+            }
+            finally {
+                manager.destroy();
+            }
+        });
+
         it('Should not allow overlapping transactions if allowTransactionAbort=false (asynchronous)', async () => {
+            eq(session.allowTransactionAbort, false);
             await session(async fetch => {
                 await delay(1);
                 await isRejected(
@@ -457,6 +475,7 @@ describe('Manager', () => {
             const manager = createManager(dispatcher, {allowTransactionAbort: true});
             manager.resource(userResource);
             const session = manager.createSession();
+            eq(session.allowTransactionAbort, true);
             try {
                 let milestones = 0;
                 session(fetch0 => {
@@ -511,11 +530,34 @@ describe('Manager', () => {
             }
         });
 
+        it('Should abort the previous transaction if they overlap if allowTransactionAbort=true on the session overrides Manager', () => {
+            const manager = createManager(dispatcher, {allowTransactionAbort: false});
+            manager.resource(userResource);
+            const session = manager.createSession({allowTransactionAbort: true});
+            eq(session.allowTransactionAbort, true);
+            try {
+                let milestones = 0;
+                session(fetch0 => {
+                    session(fetch1 => {
+                    });
+
+                    throws(() => fetch0('user', {id: -1}), Error, /session.*aborted.*new.*session.*started/i);
+
+                    ++milestones;
+                });
+                eq(milestones, 1); // to verify that session() is not eating errors by accident
+            }
+            finally {
+                session.destroy();
+            }
+        });
+
         it('Should abort the promise of a pending request', async () => {
             const manager = createManager(dispatcher, {allowTransactionAbort: true});
             manager.resource(commentResource);
 
             const session = manager.createSession();
+            eq(session.allowTransactionAbort, true);
             try {
                 await session(async fetch0 => {
                     const promise = fetch0('comment', {id: 123});
@@ -541,6 +583,7 @@ describe('Manager', () => {
             manager.resource(commentResource);
 
             const session = manager.createSession();
+            eq(session.allowTransactionAbort, true);
             try {
                 await session(async fetch => {
                     const promise0 = fetch('comment', {id: 123});
@@ -565,6 +608,7 @@ describe('Manager', () => {
             manager.resource(commentResource);
 
             const session = manager.createSession();
+            eq(session.allowTransactionAbort, false);
             try {
                 await session(async fetch => {
                     const promise = fetch('comment', {id: 123});
@@ -586,6 +630,7 @@ describe('Manager', () => {
             manager.resource(commentResource);
 
             const session = manager.createSession();
+            eq(session.allowTransactionAbort, false);
             try {
                 await session(async fetch => {
                     const promise = fetch('comment', {id: 123});

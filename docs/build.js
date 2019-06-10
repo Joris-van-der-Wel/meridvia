@@ -33,7 +33,7 @@ const TERMS = Object.freeze({
     exportCreateManager: '[`createManager([dispatcher], [options]) ⇒ Manager`](#createmanagerdispatcher-options--manager)',
     managerResourceFunc: '[`manager.resource(options)`](#managerresourceoptions)',
     managerResourcesFunc: '[`manager.resources(options)`](#managerresourcesoptions)',
-    managerCreateSessionFunc: '[`manager.createSession()` ⇒ `Session`](#managercreatesession--session)',
+    managerCreateSessionFunc: '[`manager.createSession([options])` ⇒ `Session`](#managercreatesessionoptions--session)',
     managerInvalidateFunc: '[`manager.invalidate([resourceName], [params]) ⇒ number`](#managerinvalidateresourcename-params--number)',
     managerRefreshFunc: '[`manager.refresh([resourceName], [params]) ⇒ number`](#managerrefreshresourcename-params--number)',
     managerDestroyFunc: '[`manager.destroy()`](#managerdestroy)',

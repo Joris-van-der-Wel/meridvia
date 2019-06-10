@@ -72,14 +72,14 @@ API Reference
 * {{{exportCreateManager}}}
 
 #### {{{exportCreateManager}}}
-Create a new {{{manager}}} instance. See [Manager API](#manager-api)
-
 | Argument                      | Type      | Default  |                                                               |
 | ----------------------------- | ----------| -------- | ------------------------------------------------------------- |
 | dispatcher                    | function  | `x => x` | The {{{dispatcherCallback}}}. This function will be called with the return value of any {{{fetchCallback}}} and any {{{clearCallback}}} |
-| options.allowTransactionAbort | boolean   | `false`  | If `false`, overlapping transactions are not allowed. If `true` an overlapping {{{transaction}}} for a {{{session}}} will cause the previous {{{transaction}}} to be aborted. |
+| options.allowTransactionAbort | boolean   | `false`  | If `false`, overlapping transactions are not allowed. If `true` an overlapping {{{transaction}}} for a {{{session}}} will cause the previous {{{transaction}}} to be aborted. This option can also be set per session, see {{{managerCreateSessionFunc}}}. |
 
 __Return value__: A new {{{manager}}} instance
+
+Create a new {{{manager}}} instance. See [Manager API](#manager-api)
 
 ```javascript
 {{{snippets.create_manager.scriptSource}}}
@@ -186,10 +186,10 @@ A more exhaustive example:
 ```
 
 #### {{{managerResourcesFunc}}}
-This function is a simple shorthand that lets you register multiple {{{resources}}} in a single call. It accepts an array for which every item is registered as a {{{resource}}} in exactly the same way as {{{managerResourceFunc}}}.
-
 __Return value__: `undefined` \
 __Throws__: See {{{managerResourceFunc}}}
+
+This function is a simple shorthand that lets you register multiple {{{resources}}} in a single call. It accepts an array for which every item is registered as a {{{resource}}} in exactly the same way as {{{managerResourceFunc}}}.
 
 Example:
 ```javascript
@@ -197,10 +197,15 @@ Example:
 ```
 
 #### {{{managerCreateSessionFunc}}}
-Creates a new {{{session}}} object, which is used to manage which {{{resources}}} are actually in use. See {{{sessionApi}}}.
+
+| Argument                      | Type      | Default  |                                                               |
+| ----------------------------- | ----------| -------- | ------------------------------------------------------------- |
+| options.allowTransactionAbort | boolean   | Value of the `allowTransactionAbort` option passed to the {{{createManager}}} function | If `false`, overlapping transactions are not allowed for this session. If `true` an overlapping {{{transaction}}} for this {{{session}}} will cause the previous {{{transaction}}} to be aborted. |
 
 __Return value__: {{{session}}} object \
 __Throws__: {{{IllegalStateError}}} if the {{{manager}}} has been destroyed
+
+Creates a new {{{session}}} object, which is used to manage which {{{resources}}} are actually in use. See {{{sessionApi}}}.
 
 #### {{{managerInvalidateFunc}}}
 | Argument                  | Type                     |                                                               |
@@ -304,10 +309,10 @@ Example of a {{{transaction}}} with promises
 ```
 
 #### {{{sessionDestroyFunc}}}
-Destroy the session. All {{{resources}}} that were marked as in-use for this {{{session}}} are unmarked as such. Attempting to use the {{{session}}} again will result in an error.
-
 __Return value__: `undefined` \
 __Throws__: No
+
+Destroy the session. All {{{resources}}} that were marked as in-use for this {{{session}}} are unmarked as such. Attempting to use the {{{session}}} again will result in an error.
 
 --------------------------------------------------------------------------------
 

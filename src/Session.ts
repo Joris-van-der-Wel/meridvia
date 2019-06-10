@@ -11,12 +11,14 @@ export class Session<DISPATCHED, ACTION> {
     private _destroyed: boolean;
     private _activeTransaction: Transaction<DISPATCHED, ACTION> | null;
     private _transactionsToCleanUp: ImmutableSet<Transaction<DISPATCHED, ACTION>>;
+    public readonly allowTransactionAbort: boolean;
 
-    public constructor(manager: Manager<DISPATCHED, ACTION>) {
+    public constructor(manager: Manager<DISPATCHED, ACTION>, options: {allowTransactionAbort: boolean}) {
         this._manager = manager;
         this._destroyed = false;
         this._activeTransaction = null;
         this._transactionsToCleanUp = Immutable.Set() as ImmutableSet<Transaction<DISPATCHED, ACTION>>;
+        this.allowTransactionAbort = options.allowTransactionAbort;
         Object.seal(this);
     }
 
@@ -33,7 +35,7 @@ export class Session<DISPATCHED, ACTION> {
         assert(typeof callback === 'function', 'TypeError', 'callback must be a function');
 
         if (this._activeTransaction) {
-            if (this._manager.allowTransactionAbort) {
+            if (this.allowTransactionAbort) {
                 const abortedTransaction = this._activeTransaction;
                 abortedTransaction.abort(error(
                     'MeridviaTransactionAborted',
@@ -127,10 +129,26 @@ export class Session<DISPATCHED, ACTION> {
     }
 }
 
-export const createSession = <DISPATCHED, ACTION> (manager: Manager<DISPATCHED, ACTION>): MeridviaSession<DISPATCHED> => {
-    const sessionInstance = new Session<DISPATCHED, ACTION>(manager);
+export const createSession = <DISPATCHED, ACTION> (
+    manager: Manager<DISPATCHED, ACTION>,
+    options: {allowTransactionAbort: boolean},
+): MeridviaSession<DISPATCHED> => {
+    const sessionInstance = new Session<DISPATCHED, ACTION>(manager, options);
 
-    const session = (callback: TransactionCallback<DISPATCHED>): any => sessionInstance.execute(callback);
-    session.destroy = (): boolean => sessionInstance.destroy(session);
+    const session = (
+        (callback: TransactionCallback<DISPATCHED>): any => sessionInstance.execute(callback)
+    ) as MeridviaSession<DISPATCHED>;
+
+    Object.defineProperties(session, {
+        destroy: {
+            enumerable: true,
+            value: (): boolean => sessionInstance.destroy(session),
+        },
+        allowTransactionAbort: {
+            enumerable: true,
+            get: (): boolean => sessionInstance.allowTransactionAbort,
+        },
+    });
+
     return session;
 };

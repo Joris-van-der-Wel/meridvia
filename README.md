@@ -135,14 +135,14 @@ API Reference
 * [`createManager([dispatcher], [options]) ⇒ Manager`](#createmanagerdispatcher-options--manager)
 
 #### [`createManager([dispatcher], [options]) ⇒ Manager`](#createmanagerdispatcher-options--manager)
-Create a new [__`Manager`__](#manager-api) instance. See [Manager API](#manager-api)
-
 | Argument                      | Type      | Default  |                                                               |
 | ----------------------------- | ----------| -------- | ------------------------------------------------------------- |
 | dispatcher                    | function  | `x => x` | The [__`dispatcher`__ callback](#createmanagerdispatcher-options--manager). This function will be called with the return value of any [__`fetch`__ callback](#fetch-callback) and any [__`clear`__ callback](#clear-callback) |
-| options.allowTransactionAbort | boolean   | `false`  | If `false`, overlapping transactions are not allowed. If `true` an overlapping __transaction__ for a [__`Session`__](#session-api) will cause the previous __transaction__ to be aborted. |
+| options.allowTransactionAbort | boolean   | `false`  | If `false`, overlapping transactions are not allowed. If `true` an overlapping __transaction__ for a [__`Session`__](#session-api) will cause the previous __transaction__ to be aborted. This option can also be set per session, see [`manager.createSession([options])` ⇒ `Session`](#managercreatesessionoptions--session). |
 
 __Return value__: A new [__`Manager`__](#manager-api) instance
+
+Create a new [__`Manager`__](#manager-api) instance. See [Manager API](#manager-api)
 
 ```javascript
 const {createManager} = require('meridvia');
@@ -156,7 +156,7 @@ const manager = createManager();
 * [__`Manager`__](#manager-api)
   * [`manager.resource(options)`](#managerresourceoptions)
   * [`manager.resources(options)`](#managerresourcesoptions)
-  * [`manager.createSession()` ⇒ `Session`](#managercreatesession--session)
+  * [`manager.createSession([options])` ⇒ `Session`](#managercreatesessionoptions--session)
   * [`manager.invalidate([resourceName], [params]) ⇒ number`](#managerinvalidateresourcename-params--number)
   * [`manager.refresh([resourceName], [params]) ⇒ number`](#managerrefreshresourcename-params--number)
   * [`manager.destroy()`](#managerdestroy)
@@ -292,10 +292,10 @@ manager.resource({
 ```
 
 #### [`manager.resources(options)`](#managerresourcesoptions)
-This function is a simple shorthand that lets you register multiple __resources__ in a single call. It accepts an array for which every item is registered as a __resource__ in exactly the same way as [`manager.resource(options)`](#managerresourceoptions).
-
 __Return value__: `undefined` \
 __Throws__: See [`manager.resource(options)`](#managerresourceoptions)
+
+This function is a simple shorthand that lets you register multiple __resources__ in a single call. It accepts an array for which every item is registered as a __resource__ in exactly the same way as [`manager.resource(options)`](#managerresourceoptions).
 
 Example:
 ```javascript
@@ -323,11 +323,16 @@ manager.resources([
 ]);
 ```
 
-#### [`manager.createSession()` ⇒ `Session`](#managercreatesession--session)
-Creates a new [__`Session`__](#session-api) object, which is used to manage which __resources__ are actually in use. See [Session API](#session-api).
+#### [`manager.createSession([options])` ⇒ `Session`](#managercreatesessionoptions--session)
+
+| Argument                      | Type      | Default  |                                                               |
+| ----------------------------- | ----------| -------- | ------------------------------------------------------------- |
+| options.allowTransactionAbort | boolean   | Value of the `allowTransactionAbort` option passed to the [`createManager`](#createmanagerdispatcher-options--manager) function | If `false`, overlapping transactions are not allowed for this session. If `true` an overlapping __transaction__ for this [__`Session`__](#session-api) will cause the previous __transaction__ to be aborted. |
 
 __Return value__: [__`Session`__](#session-api) object \
 __Throws__: `IllegalStateError` if the [__`Manager`__](#manager-api) has been destroyed
+
+Creates a new [__`Session`__](#session-api) object, which is used to manage which __resources__ are actually in use. See [Session API](#session-api).
 
 #### [`manager.invalidate([resourceName], [params]) ⇒ number`](#managerinvalidateresourcename-params--number)
 | Argument                  | Type                     |                                                               |
@@ -442,10 +447,10 @@ example().then(() => console.log('End of example'));
 ```
 
 #### [session.destroy()](#sessiondestroy)
-Destroy the session. All __resources__ that were marked as in-use for this [__`Session`__](#session-api) are unmarked as such. Attempting to use the [__`Session`__](#session-api) again will result in an error.
-
 __Return value__: `undefined` \
 __Throws__: No
+
+Destroy the session. All __resources__ that were marked as in-use for this [__`Session`__](#session-api) are unmarked as such. Attempting to use the [__`Session`__](#session-api) again will result in an error.
 
 --------------------------------------------------------------------------------
 
