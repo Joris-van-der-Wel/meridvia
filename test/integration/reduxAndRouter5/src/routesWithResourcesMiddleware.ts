@@ -1,6 +1,6 @@
 import {Dependencies, Middleware, Route, Router, State} from 'router5';
 
-import {MeridviaSession, TransactionFetch} from '../../../..';
+import {MeridviaSession, TransactionRequest} from '../../../..';
 
 type MiddlewareFactory = (
     router: Router,
@@ -8,7 +8,7 @@ type MiddlewareFactory = (
 ) => Middleware;
 
 export interface RouteWithResources<DISPATCHED> extends Route {
-    resources?: (routeParams: Record<string, any>, fetch: TransactionFetch<DISPATCHED>) => any;
+    resources?: (routeParams: Record<string, any>, request: TransactionRequest<DISPATCHED>) => any;
     children?: RouteWithResources<DISPATCHED>[];
 }
 
@@ -35,7 +35,7 @@ export const routesWithResourcesMiddleware =
         return async (toState: State): Promise<boolean> => {
             const toRoute = findRoute(routes, toState.name);
             const resourcesCallback = (toRoute && toRoute.resources) || (async (): Promise<void> => {});
-            await session((fetch): void | Promise<void> => resourcesCallback(toState.params, fetch));
+            await session((request): void | Promise<void> => resourcesCallback(toState.params, request));
             return true;
         };
     };

@@ -57,8 +57,8 @@ export class Session<DISPATCHED, ACTION> {
         const transaction = new Transaction<DISPATCHED, ACTION>(this._manager, this, transactionBeginMs);
         this._activeTransaction = transaction;
 
-        const fetch = (resourceName: string, params: ActionParams = {}): DISPATCHED => {
-            return transaction.fetch(resourceName, params);
+        const request = (resourceName: string, params: ActionParams = {}): DISPATCHED => {
+            return transaction.request(resourceName, params);
         };
 
         const endTransaction = (): void => {
@@ -80,7 +80,7 @@ export class Session<DISPATCHED, ACTION> {
 
         let returnValue;
         try {
-            returnValue = callback(fetch);
+            returnValue = callback(request);
         }
         catch (err) {
             endTransaction();

@@ -1,5 +1,5 @@
 import {Dispatched} from './resources';
-import {TransactionFetch} from '../../../..';
+import {TransactionRequest} from '../../../..';
 
 export const routes = [
     {
@@ -9,19 +9,19 @@ export const routes = [
     {
         name: 'subreddit',
         path: '/r/:subreddit',
-        async resources(routeParams: Record<string, any>, fetch: TransactionFetch<Dispatched>): Promise<void> {
+        async resources(routeParams: Record<string, any>, request: TransactionRequest<Dispatched>): Promise<void> {
             const {subreddit} = routeParams;
-            await fetch('posts', {subreddit});
+            await request('posts', {subreddit});
         },
         children: [
             {
                 name: 'post',
                 path: '/:postId',
-                async resources(routeParams: Record<string, any>, fetch: TransactionFetch<Dispatched>): Promise<void> {
+                async resources(routeParams: Record<string, any>, request: TransactionRequest<Dispatched>): Promise<void> {
                     const {subreddit, postId} = routeParams;
                     await Promise.all([
-                        fetch('posts', {subreddit}),
-                        fetch('comments', {postId}),
+                        request('posts', {subreddit}),
+                        request('comments', {postId}),
                     ]);
                 },
             },

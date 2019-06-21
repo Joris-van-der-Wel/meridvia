@@ -125,9 +125,9 @@ describe('Manager', () => {
         });
 
         it('Should dispatch the proper fetch action with params as a pojo', () => {
-            session(fetch => {
+            session(request => {
                 const originalParams = {id: 123};
-                const result = fetch('user', originalParams);
+                const result = request('user', originalParams);
                 eq(userResource.fetch.callCount, 1);
                 eq(dispatcher.callCount, 1);
                 deq(userResource.fetch.firstCall.args[0], {id: 123});
@@ -146,9 +146,9 @@ describe('Manager', () => {
         });
 
         it('Should dispatch the proper fetch action with params as an Immutable Map', () => {
-            session(fetch => {
+            session(request => {
                 const originalParams = Immutable.Map({id: 123});
-                const result = fetch('post', originalParams);
+                const result = request('post', originalParams);
                 eq(postResource.fetch.callCount, 1);
                 eq(dispatcher.callCount, 1);
                 eq(postResource.fetch.firstCall.args[0], originalParams, 'Should pass the params as-is if it is Immutable');
@@ -165,9 +165,9 @@ describe('Manager', () => {
         it('Should dispatch the proper fetch action with params as an Immutable Record instance', () => {
             const myRecord = Immutable.Record({id: 0});
 
-            session(fetch => {
+            session(request => {
                 const originalParams = myRecord({id: 123});
-                const result = fetch('post', originalParams);
+                const result = request('post', originalParams);
                 eq(postResource.fetch.callCount, 1);
                 eq(dispatcher.callCount, 1);
                 eq(postResource.fetch.firstCall.args[0], originalParams, 'Should pass the params as-is if it is Immutable');
@@ -182,8 +182,8 @@ describe('Manager', () => {
         });
 
         it('Should dispatch with an empty object as params if the params are not set', () => {
-            session(fetch => {
-                const result = fetch('user');
+            session(request => {
+                const result = request('user');
                 eq(userResource.fetch.callCount, 1);
                 eq(dispatcher.callCount, 1);
                 deq(userResource.fetch.firstCall.args[0], {});
@@ -201,8 +201,8 @@ describe('Manager', () => {
             manager2.resource(userResource);
             const session = manager2.createSession();
             try {
-                session(fetch => {
-                    const result = fetch('user', {id: 123});
+                session(request => {
+                    const result = request('user', {id: 123});
                     deq(result, {type: 'FETCH_USER', params: {id: 123}, result: {name: 'User Foo'}});
                 });
             }
@@ -212,24 +212,24 @@ describe('Manager', () => {
         });
 
         it('Should not throw if the resource has not been registered', () => {
-            session(fetch => {
-                throws(() => fetch('unknown', 0), Error, /given resource.*name.*not.*registered/i);
+            session(request => {
+                throws(() => request('unknown', 0), Error, /given resource.*name.*not.*registered/i);
             });
         });
 
         it('Should not accept params with an incorrect type', () => {
-            session(fetch => {
-                throws(() => fetch('post', 0), Error, /params.*must.*immutable.*or.*plain.*object/i);
-                throws(() => fetch('post', false), Error, /params.*must.*immutable.*or.*plain.*object/i);
-                throws(() => fetch('post', null), Error, /params.*must.*immutable.*or.*plain.*object/i);
-                throws(() => fetch('post', 'foo'), Error, /params.*must.*immutable.*or.*plain.*object/i);
+            session(request => {
+                throws(() => request('post', 0), Error, /params.*must.*immutable.*or.*plain.*object/i);
+                throws(() => request('post', false), Error, /params.*must.*immutable.*or.*plain.*object/i);
+                throws(() => request('post', null), Error, /params.*must.*immutable.*or.*plain.*object/i);
+                throws(() => request('post', 'foo'), Error, /params.*must.*immutable.*or.*plain.*object/i);
             });
         });
 
         it('Should fetch the same resource only once', () => {
-            session(fetch => {
-                const result0 = fetch('post', {id: 123});
-                const result1 = fetch('post', {id: 123});
+            session(request => {
+                const result0 = request('post', {id: 123});
+                const result1 = request('post', {id: 123});
                 eq(result0, result1);
             });
 
@@ -239,16 +239,16 @@ describe('Manager', () => {
 
         it('Should not re-fetch resources in the next session that are still in use', () => {
             let result0;
-            session(fetch => {
-                result0 = fetch('post', {id: 123});
+            session(request => {
+                result0 = request('post', {id: 123});
             });
 
             eq(postResource.clear.callCount, 0);
             eq(postResource.fetch.callCount, 1);
 
             let result1;
-            session(fetch => {
-                result1 = fetch('post', {id: 123});
+            session(request => {
+                result1 = request('post', {id: 123});
             });
 
             eq(postResource.clear.callCount, 0);
@@ -257,11 +257,11 @@ describe('Manager', () => {
         });
 
         it('Should fetch multiple times for resources that only differ in params', () => {
-            session(fetch => {
-                const result0 = fetch('post', {id: 123});
+            session(request => {
+                const result0 = request('post', {id: 123});
                 deq(result0, {dispatched: {type: 'FETCH_POST', params: {id: 123}, result: {name: 'Post Foo'}}});
 
-                const result1 = fetch('post', {id: 456});
+                const result1 = request('post', {id: 456});
                 deq(result1, {dispatched: {type: 'FETCH_POST', params: {id: 456}, result: {name: 'Post Foo'}}});
             });
 
@@ -270,10 +270,10 @@ describe('Manager', () => {
         });
 
         it('Should clear resources that are no longer in use', () => {
-            session(fetch => {
-                fetch('post', {id: 123});
-                fetch('post', {id: 456});
-                fetch('post', {id: 789});
+            session(request => {
+                request('post', {id: 123});
+                request('post', {id: 456});
+                request('post', {id: 789});
             });
             eq(postResource.clear.callCount, 0);
             eq(postResource.fetch.callCount, 3);
@@ -281,9 +281,9 @@ describe('Manager', () => {
             deq(dispatcher.getCall(1).args, [{type: 'FETCH_POST', params: {id: 456}, result: {name: 'Post Foo'}}]);
             deq(dispatcher.getCall(2).args, [{type: 'FETCH_POST', params: {id: 789}, result: {name: 'Post Foo'}}]);
 
-            session(fetch => {
-                fetch('post', {id: 123});
-                fetch('post', {id: 789});
+            session(request => {
+                request('post', {id: 123});
+                request('post', {id: 789});
             });
             eq(postResource.clear.callCount, 1);
             eq(postResource.fetch.callCount, 3);
@@ -291,8 +291,8 @@ describe('Manager', () => {
             deq(postResource.clear.firstCall.args[0], {id: 456});
             deq(dispatcher.getCall(3).args, [{type: 'CLEAR_POST', params: {id: 456}}]);
 
-            session(fetch => {
-                fetch('post', {id: 456});
+            session(request => {
+                request('post', {id: 456});
             });
 
             eq(postResource.clear.callCount, 3);
@@ -303,16 +303,16 @@ describe('Manager', () => {
         });
 
         it('Should return promises from the fetch action as-is', async () => {
-            await session(async fetch => {
-                const result = fetch('comment', {commentId: 123});
+            await session(async request => {
+                const result = request('comment', {commentId: 123});
                 eq(typeof result.then, 'function');
                 deq(await result, {dispatched: {type: 'FETCH_COMMENT', params: {commentId: 123},  result: {content: 'Hello Hello'}}});
             });
         });
 
         it('Should pass promises to the dispatcher as-is', async () => {
-            await session(async fetch => {
-                await fetch('comment', {commentId: 123});
+            await session(async request => {
+                await request('comment', {commentId: 123});
             });
             eq(dispatcher.callCount, 1);
             eq(typeof dispatcher.firstCall.args[0].then, 'function');
@@ -321,14 +321,14 @@ describe('Manager', () => {
 
         it('Should not clear resources if a different session is using them', () => {
             session2 = manager.createSession();
-            session(fetch => {
-                fetch('post', {id: 123});
+            session(request => {
+                request('post', {id: 123});
             });
-            session2(fetch => {
-                fetch('post', {id: 123});
+            session2(request => {
+                request('post', {id: 123});
             });
 
-            session(fetch => {});
+            session(request => {});
             eq(postResource.clear.callCount, 0);
             eq(postResource.fetch.callCount, 1);
         });
@@ -336,13 +336,13 @@ describe('Manager', () => {
 
         it('Should continue on clearing other resources if the clear action throws', () => {
             throwFoodClear = true;
-            session(fetch => {
-                fetch('post', {id: 123});
-                fetch('food', {id: 456});
-                fetch('post', {id: 789});
+            session(request => {
+                request('post', {id: 123});
+                request('food', {id: 456});
+                request('post', {id: 789});
             });
 
-            session(fetch => {});
+            session(request => {});
 
             eq(postResource.fetch.callCount, 2);
             eq(postResource.clear.callCount, 2);
@@ -351,17 +351,17 @@ describe('Manager', () => {
             eq(dispatcher.callCount, 5); // 1 action has not been dispatched because of the error
 
             // should not attempt the clear action again
-            session(fetch => {});
+            session(request => {});
             eq(foodResource.clear.callCount, 1);
             eq(dispatcher.callCount, 5);
         });
 
         it('Should attempt the fetch again if the action had thrown', () => {
             throwFoodFetch = true;
-            session(fetch => {
-                throws(() => fetch('food', {id: 456}), Error, 'Error from test! foodResource.fetch()');
+            session(request => {
+                throws(() => request('food', {id: 456}), Error, 'Error from test! foodResource.fetch()');
                 throwFoodFetch = false;
-                fetch('food', {id: 456});
+                request('food', {id: 456});
             });
 
             eq(foodResource.fetch.callCount, 2);
@@ -376,13 +376,13 @@ describe('Manager', () => {
 
         it('Should attempt the fetch again if the action threw during the previous session', () => {
             throwFoodFetch = true;
-            session(fetch => {
-                throws(() => fetch('food', {id: 456}), Error, 'Error from test! foodResource.fetch()');
+            session(request => {
+                throws(() => request('food', {id: 456}), Error, 'Error from test! foodResource.fetch()');
             });
 
             throwFoodFetch = false;
-            session(fetch => {
-                fetch('food', {id: 456});
+            session(request => {
+                request('food', {id: 456});
             });
 
             eq(foodResource.fetch.callCount, 2);
@@ -397,13 +397,13 @@ describe('Manager', () => {
 
         it('Should attempt the fetch again if the action returned a rejected promise during the previous session', async () => {
             rejectPhotoFetch = true;
-            await session(async fetch => {
-                await isRejected(fetch('photo', {id: 987}), Error, 'Error from test! photoResource.fetch()');
+            await session(async request => {
+                await isRejected(request('photo', {id: 987}), Error, 'Error from test! photoResource.fetch()');
             });
 
             rejectPhotoFetch = false;
-            await session(async fetch => {
-                await fetch('photo', {id: 987});
+            await session(async request => {
+                await request('photo', {id: 987});
             });
 
             eq(photoResource.fetch.callCount, 2);
@@ -425,12 +425,12 @@ describe('Manager', () => {
                 }),
             });
 
-            await session(async fetch => {
-                await fetch('bicycle', {id: 2});
+            await session(async request => {
+                await request('bicycle', {id: 2});
             });
 
-            await session(async fetch => {
-                await fetch('bicycle', {id: 3});
+            await session(async request => {
+                await request('bicycle', {id: 3});
             });
         });
     });
@@ -438,8 +438,8 @@ describe('Manager', () => {
     describe('Transaction aborting', () => {
         it('Should not allow overlapping transactions if allowTransactionAbort=false (synchronous)', () => {
             eq(session.allowTransactionAbort, false);
-            session(fetch => {
-                throws(() => session(fetch => {}), Error, /previous.*transaction.*in.*progress/i);
+            session(request => {
+                throws(() => session(request => {}), Error, /previous.*transaction.*in.*progress/i);
             });
         });
 
@@ -449,8 +449,8 @@ describe('Manager', () => {
                 const session = manager.createSession({allowTransactionAbort: false});
 
                 eq(session.allowTransactionAbort, false);
-                session(fetch => {
-                    throws(() => session(fetch => {
+                session(request => {
+                    throws(() => session(request => {
                     }), Error, /previous.*transaction.*in.*progress/i);
                 });
             }
@@ -461,10 +461,10 @@ describe('Manager', () => {
 
         it('Should not allow overlapping transactions if allowTransactionAbort=false (asynchronous)', async () => {
             eq(session.allowTransactionAbort, false);
-            await session(async fetch => {
+            await session(async request => {
                 await delay(1);
                 await isRejected(
-                    Promise.resolve().then(() => session(async fetch => {})),
+                    Promise.resolve().then(() => session(async request => {})),
                     Error,
                     /previous.*transaction.*in.*progress/i
                 );
@@ -478,27 +478,27 @@ describe('Manager', () => {
             eq(session.allowTransactionAbort, true);
             try {
                 let milestones = 0;
-                session(fetch0 => {
-                    fetch0('user', {id: 0});
-                    fetch0('user', {id: 100});
+                session(request0 => {
+                    request0('user', {id: 0});
+                    request0('user', {id: 100});
                     eq(userResource.fetch.callCount, 2);
                     eq(userResource.clear.callCount, 0);
 
-                    session(fetch1 => {
-                        throws(() => fetch0('user', {id: -1}), Error, /session.*aborted.*new.*session.*started/i);
-                        fetch1('user', {id: 1});
+                    session(request1 => {
+                        throws(() => request0('user', {id: -1}), Error, /session.*aborted.*new.*session.*started/i);
+                        request1('user', {id: 1});
                         eq(userResource.fetch.callCount, 3);
                         eq(userResource.clear.callCount, 0);
 
-                        session(fetch2 => {
+                        session(request2 => {
                             // this is the first transaction that completes successfully
                             // after this transaction user 0 and 1 should be cleared.
                             // 2 and 100 which are references here should not. 100 is also references in the first
                             // transaction so that we can verify it is not cleared in between
-                            throws(() => fetch0('user', {id: -1}), Error, /session.*aborted.*new.*session.*started/i);
-                            throws(() => fetch1('user', {id: -1}), Error, /session.*aborted.*new.*session.*started/i);
-                            fetch2('user', {id: 2});
-                            fetch2('user', {id: 100});
+                            throws(() => request0('user', {id: -1}), Error, /session.*aborted.*new.*session.*started/i);
+                            throws(() => request1('user', {id: -1}), Error, /session.*aborted.*new.*session.*started/i);
+                            request2('user', {id: 2});
+                            request2('user', {id: 100});
                             eq(userResource.fetch.callCount, 4);
                             eq(userResource.clear.callCount, 0);
                             ++milestones;
@@ -507,7 +507,7 @@ describe('Manager', () => {
                         eq(userResource.fetch.callCount, 4);
                         eq(userResource.clear.callCount, 2);
 
-                        throws(() => fetch1('user', {id: -1}), Error, /session.*aborted.*new.*session.*started/i);
+                        throws(() => request1('user', {id: -1}), Error, /session.*aborted.*new.*session.*started/i);
                         ++milestones;
                     });
 
@@ -537,11 +537,11 @@ describe('Manager', () => {
             eq(session.allowTransactionAbort, true);
             try {
                 let milestones = 0;
-                session(fetch0 => {
-                    session(fetch1 => {
+                session(request0 => {
+                    session(request1 => {
                     });
 
-                    throws(() => fetch0('user', {id: -1}), Error, /session.*aborted.*new.*session.*started/i);
+                    throws(() => request0('user', {id: -1}), Error, /session.*aborted.*new.*session.*started/i);
 
                     ++milestones;
                 });
@@ -559,16 +559,16 @@ describe('Manager', () => {
             const session = manager.createSession();
             eq(session.allowTransactionAbort, true);
             try {
-                await session(async fetch0 => {
-                    const promise = fetch0('comment', {id: 123});
+                await session(async request0 => {
+                    const promise = request0('comment', {id: 123});
 
-                    await session(async fetch1 => {
-                        const err0 = throws(() => fetch0('user', {id: -1}), Error, /session.*aborted.*new.*session.*started/i);
+                    await session(async request1 => {
+                        const err0 = throws(() => request0('user', {id: -1}), Error, /session.*aborted.*new.*session.*started/i);
                         const err1 = await isRejected(promise, Error, /session.*aborted.*new.*session.*started/i);
                         eq(err0.name, 'MeridviaTransactionAborted');
                         eq(err1.name, 'MeridviaTransactionAborted');
 
-                        const comment = await fetch1('comment', {id: 123});
+                        const comment = await request1('comment', {id: 123});
                         deq(comment, {dispatched: {type: 'FETCH_COMMENT', params: {id: 123}, result: {content: 'Hello Hello'}}});
                     });
                 });
@@ -585,12 +585,12 @@ describe('Manager', () => {
             const session = manager.createSession();
             eq(session.allowTransactionAbort, true);
             try {
-                await session(async fetch => {
-                    const promise0 = fetch('comment', {id: 123});
-                    const promise1 = fetch('comment', {id: 456});
+                await session(async request => {
+                    const promise0 = request('comment', {id: 123});
+                    const promise1 = request('comment', {id: 456});
 
                     session.destroy();
-                    const err0 = throws(() => fetch('user', {id: -1}), Error, /session.*aborted.*because.*destroyed/i);
+                    const err0 = throws(() => request('user', {id: -1}), Error, /session.*aborted.*because.*destroyed/i);
                     const err1 = await isRejected(promise0, Error, /session.*aborted.*because.*destroyed/i);
                     const err2 = await isRejected(promise1, Error, /session.*aborted.*because.*destroyed/i);
                     eq(err0.name, 'MeridviaTransactionAborted');
@@ -610,11 +610,11 @@ describe('Manager', () => {
             const session = manager.createSession();
             eq(session.allowTransactionAbort, false);
             try {
-                await session(async fetch => {
-                    const promise = fetch('comment', {id: 123});
+                await session(async request => {
+                    const promise = request('comment', {id: 123});
 
                     session.destroy();
-                    const err0 = throws(() => fetch('user', {id: -1}), Error, /session.*aborted.*because.*destroyed/i);
+                    const err0 = throws(() => request('user', {id: -1}), Error, /session.*aborted.*because.*destroyed/i);
                     const err1 = await isRejected(promise, Error, /session.*aborted.*because.*destroyed/i);
                     eq(err0.name, 'MeridviaTransactionAborted');
                     eq(err1.name, 'MeridviaTransactionAborted');
@@ -632,11 +632,11 @@ describe('Manager', () => {
             const session = manager.createSession();
             eq(session.allowTransactionAbort, false);
             try {
-                await session(async fetch => {
-                    const promise = fetch('comment', {id: 123});
+                await session(async request => {
+                    const promise = request('comment', {id: 123});
 
                     manager.destroy();
-                    const err0 = throws(() => fetch('user', {id: -1}), Error, /session.*aborted.*because.*destroyed/i);
+                    const err0 = throws(() => request('user', {id: -1}), Error, /session.*aborted.*because.*destroyed/i);
                     const err1 = await isRejected(promise, Error, /session.*aborted.*because.*destroyed/i);
                     eq(err0.name, 'MeridviaTransactionAborted');
                     eq(err1.name, 'MeridviaTransactionAborted');
@@ -651,12 +651,12 @@ describe('Manager', () => {
     describe('Session destruction', () => {
         it('Should clear resources if a session is destroyed', () => {
             session2 = manager.createSession();
-            session(fetch => {
-                fetch('post', {id: 123});
-                fetch('post', {id: 456});
+            session(request => {
+                request('post', {id: 123});
+                request('post', {id: 456});
             });
-            session2(fetch => {
-                fetch('post', {id: 123});
+            session2(request => {
+                request('post', {id: 123});
             });
             eq(postResource.fetch.callCount, 2);
             eq(postResource.clear.callCount, 0);
@@ -668,8 +668,8 @@ describe('Manager', () => {
         });
 
         it('Should do nothing if destroyed twice', () => {
-            session(fetch => {
-                fetch('post', {id: 123});
+            session(request => {
+                request('post', {id: 123});
             });
 
             session.destroy();
@@ -680,15 +680,15 @@ describe('Manager', () => {
         });
 
         it('Should clear resources if a session is destroyed in the middle of a transaction', () => {
-            session(fetch => {
-                fetch('post', {id: 123});
+            session(request => {
+                request('post', {id: 123});
             });
 
-            session(fetch => {
-                fetch('post', {id: 123}); // this one already existed
-                fetch('post', {id: 456}); // newly introduced in a transaction that is destroyed in the middle of it
+            session(request => {
+                request('post', {id: 123}); // this one already existed
+                request('post', {id: 456}); // newly introduced in a transaction that is destroyed in the middle of it
                 session.destroy();
-                throws(() => fetch('post', {id: 789}), Error, /session.*destroyed/i);
+                throws(() => request('post', {id: 789}), Error, /session.*destroyed/i);
             });
 
             eq(postResource.fetch.callCount, 2);
@@ -702,25 +702,25 @@ describe('Manager', () => {
 
         it('Should not allow for a new transaction after a session has been destroyed', () => {
             session.destroy();
-            throws(() => session(fetch => {}), Error, /session.*destroyed/);
+            throws(() => session(request => {}), Error, /session.*destroyed/);
         });
     });
 
     describe('manager.invalidate()', () => {
         it('Should fetch again if all resources have been invalidated using manager.invalidate()', () => {
-            session(fetch => {
-                fetch('post', {id: 123});
-                fetch('post', {id: 456});
-                fetch('user', {id: 789});
+            session(request => {
+                request('post', {id: 123});
+                request('post', {id: 456});
+                request('user', {id: 789});
             });
 
             const invalidationCount = manager.invalidate();
             eq(invalidationCount, 3);
 
-            session(fetch => {
-                fetch('post', {id: 123});
-                fetch('post', {id: 456});
-                fetch('user', {id: 789});
+            session(request => {
+                request('post', {id: 123});
+                request('post', {id: 456});
+                request('user', {id: 789});
             });
 
             eq(postResource.clear.callCount, 0);
@@ -745,19 +745,19 @@ describe('Manager', () => {
         });
 
         it('Should fetch again if a specific resource has been invalidated using manager.invalidate()', () => {
-            session(fetch => {
-                fetch('post', {id: 123});
-                fetch('post', {id: 456});
-                fetch('user', {id: 789});
+            session(request => {
+                request('post', {id: 123});
+                request('post', {id: 456});
+                request('user', {id: 789});
             });
 
             const invalidationCount = manager.invalidate('post');
             eq(invalidationCount, 2);
 
-            session(fetch => {
-                fetch('post', {id: 123});
-                fetch('post', {id: 456});
-                fetch('user', {id: 789});
+            session(request => {
+                request('post', {id: 123});
+                request('post', {id: 456});
+                request('user', {id: 789});
             });
 
             eq(postResource.clear.callCount, 0);
@@ -779,19 +779,19 @@ describe('Manager', () => {
         });
 
         it('Should fetch again if a specific resource instance has been invalidated using manager.invalidate()', () => {
-            session(fetch => {
-                fetch('post', {id: 123});
-                fetch('post', {id: 456});
-                fetch('user', {id: 789});
+            session(request => {
+                request('post', {id: 123});
+                request('post', {id: 456});
+                request('user', {id: 789});
             });
 
             const invalidationCount = manager.invalidate('post', {id: 456});
             eq(invalidationCount, 1);
 
-            session(fetch => {
-                fetch('post', {id: 123});
-                fetch('post', {id: 456});
-                fetch('user', {id: 789});
+            session(request => {
+                request('post', {id: 123});
+                request('post', {id: 456});
+                request('user', {id: 789});
             });
 
             eq(postResource.clear.callCount, 0);
@@ -811,19 +811,19 @@ describe('Manager', () => {
         });
 
         it('Should do nothing if manager.invalidate() does not match anything', () => {
-            session(fetch => {
-                fetch('post', {id: 123});
-                fetch('post', {id: 456});
-                fetch('user', {id: 789});
+            session(request => {
+                request('post', {id: 123});
+                request('post', {id: 456});
+                request('user', {id: 789});
             });
 
             const invalidationCount = manager.invalidate('post', {id: 9001});
             eq(invalidationCount, 0);
 
-            session(fetch => {
-                fetch('post', {id: 123});
-                fetch('post', {id: 456});
-                fetch('user', {id: 789});
+            session(request => {
+                request('post', {id: 123});
+                request('post', {id: 456});
+                request('user', {id: 789});
             });
 
             eq(postResource.clear.callCount, 0);
@@ -865,20 +865,20 @@ describe('Manager', () => {
         });
 
         it('Should fetch again if the current fetch action calls invalidate() synchronously', () => {
-            session(fetch => {
+            session(request => {
                 doInvalidate = true;
-                fetch('album', {id: 123});
+                request('album', {id: 123});
                 doInvalidate = false;
-                fetch('album', {id: 456});
+                request('album', {id: 456});
             });
 
             eq(albumResource.fetch.callCount, 2);
             deq(albumResource.fetch.firstCall.args[0], {id: 123});
             deq(albumResource.fetch.secondCall.args[0], {id: 456});
 
-            session(fetch => {
-                fetch('album', {id: 123});
-                fetch('album', {id: 456});
+            session(request => {
+                request('album', {id: 123});
+                request('album', {id: 456});
             });
 
             eq(albumResource.fetch.callCount, 3);
@@ -886,9 +886,9 @@ describe('Manager', () => {
         });
 
         it('Should fetch again if the most recent fetch action calls invalidate() asynchronously', () => {
-            session(fetch => {
-                fetch('album', {id: 123});
-                fetch('album', {id: 456});
+            session(request => {
+                request('album', {id: 123});
+                request('album', {id: 456});
             });
 
             invalidateCallbacks[0]();
@@ -897,23 +897,23 @@ describe('Manager', () => {
             deq(albumResource.fetch.firstCall.args[0], {id: 123});
             deq(albumResource.fetch.secondCall.args[0], {id: 456});
 
-            session(fetch => {
-                fetch('album', {id: 123});
-                fetch('album', {id: 456});
+            session(request => {
+                request('album', {id: 123});
+                request('album', {id: 456});
             });
             eq(albumResource.fetch.callCount, 3);
             deq(albumResource.fetch.thirdCall.args[0], {id: 123});
 
-            session(fetch => {
-                fetch('album', {id: 123});
-                fetch('album', {id: 456});
+            session(request => {
+                request('album', {id: 123});
+                request('album', {id: 456});
             });
             eq(albumResource.fetch.callCount, 3);
         });
 
         it('Should not invalidate anything if invalidate() is used by an old fetch action', () => {
-            session(fetch => {
-                fetch('album', {id: 123});
+            session(request => {
+                request('album', {id: 123});
             });
 
             eq(albumResource.fetch.callCount, 1);
@@ -921,16 +921,16 @@ describe('Manager', () => {
 
             manager.invalidate(); // so that we fetch again
 
-            session(fetch => {
-                fetch('album', {id: 123});
+            session(request => {
+                request('album', {id: 123});
             });
             eq(albumResource.fetch.callCount, 2);
             deq(albumResource.fetch.secondCall.args[0], {id: 123});
 
             invalidateCallbacks[0](); // this invalidate() function belongs to the first fetch
 
-            session(fetch => {
-                fetch('album', {id: 123});
+            session(request => {
+                request('album', {id: 123});
             });
 
             eq(albumResource.fetch.callCount, 2);
@@ -939,10 +939,10 @@ describe('Manager', () => {
 
     describe('Maximum Staleness', () => {
         it('Should re-fetch stale resources if maximumStaleness is set and reached', () => {
-            session(fetch => {
-                fetch('user', {id: 123});
-                fetch('post', {id: 123});
-                fetch('post', {id: 456});
+            session(request => {
+                request('user', {id: 123});
+                request('post', {id: 123});
+                request('post', {id: 456});
             });
             eq(userResource.clear.callCount, 0);
             eq(userResource.fetch.callCount, 1);
@@ -950,20 +950,20 @@ describe('Manager', () => {
             eq(postResource.fetch.callCount, 2);
 
             clock.tick('15:00'); // +15 minutes
-            session(fetch => {
-                fetch('user', {id: 123});
-                fetch('post', {id: 123});
-                fetch('post', {id: 456});
+            session(request => {
+                request('user', {id: 123});
+                request('post', {id: 123});
+                request('post', {id: 456});
             });
             // no changes yet, staleness is set to 15 minutes
             eq(postResource.clear.callCount, 0);
             eq(postResource.fetch.callCount, 2);
 
             clock.tick(1); // +1 ms to push over the staleness limit
-            session(fetch => {
-                fetch('user', {id: 123});
-                fetch('post', {id: 123});
-                fetch('post', {id: 456});
+            session(request => {
+                request('user', {id: 123});
+                request('post', {id: 123});
+                request('post', {id: 456});
             });
             eq(userResource.clear.callCount, 0);
             eq(userResource.fetch.callCount, 1);
@@ -972,15 +972,15 @@ describe('Manager', () => {
         });
 
         it('Should not re-fetch resources if maximumStaleness is not set', () => {
-            session(fetch => {
-                fetch('user', {id: 123});
+            session(request => {
+                request('user', {id: 123});
             });
             eq(userResource.clear.callCount, 0);
             eq(userResource.fetch.callCount, 1);
 
             clock.tick('12:00:00'); // +12 hours
-            session(fetch => {
-                fetch('user', {id: 123});
+            session(request => {
+                request('user', {id: 123});
             });
             // maximum staleness is not set for user  15 minutes
             eq(userResource.clear.callCount, 0);
@@ -990,29 +990,29 @@ describe('Manager', () => {
 
     describe('Caching', () => {
         it('Should clear resources after the cache age expires and not before', () => {
-            session(fetch => {
-                fetch('animal', {id: 1234});
-                fetch('animal', {id: 2345});
+            session(request => {
+                request('animal', {id: 1234});
+                request('animal', {id: 2345});
             });
             eq(animalResource.fetch.callCount, 2);
             eq(animalResource.clear.callCount, 0);
 
-            session(fetch => {
-                fetch('animal', {id: 2345});
+            session(request => {
+                request('animal', {id: 2345});
             });
             eq(animalResource.fetch.callCount, 2);
             eq(animalResource.clear.callCount, 0);
 
             clock.tick('05:00'); // (cache age is 5 minutes)
-            session(fetch => {
-                fetch('animal', {id: 2345});
+            session(request => {
+                request('animal', {id: 2345});
             });
             eq(animalResource.fetch.callCount, 2);
             eq(animalResource.clear.callCount, 0);
 
             clock.tick(1); // 1ms to push over the cache age
-            session(fetch => {
-                fetch('animal', {id: 2345});
+            session(request => {
+                request('animal', {id: 2345});
             });
             eq(animalResource.fetch.callCount, 2);
             eq(animalResource.clear.callCount, 1);
@@ -1025,13 +1025,13 @@ describe('Manager', () => {
         });
 
         it('Should clear resources with a timer after the cache age expires', () => {
-            session(fetch => {
-                fetch('animal', {id: 1234});
+            session(request => {
+                request('animal', {id: 1234});
             });
             eq(animalResource.fetch.callCount, 1);
             eq(animalResource.clear.callCount, 0);
 
-            session(fetch => {});
+            session(request => {});
             eq(animalResource.fetch.callCount, 1);
             eq(animalResource.clear.callCount, 0);
 
@@ -1047,13 +1047,13 @@ describe('Manager', () => {
         });
 
         it('Should clear resources immediately if manager.cleanupResources() is called', () => {
-            session(fetch => {
-                fetch('animal', {id: 1234});
+            session(request => {
+                request('animal', {id: 1234});
             });
             eq(animalResource.fetch.callCount, 1);
             eq(animalResource.clear.callCount, 0);
 
-            session(fetch => {});
+            session(request => {});
             eq(animalResource.fetch.callCount, 1);
             eq(animalResource.clear.callCount, 0);
 
@@ -1071,40 +1071,40 @@ describe('Manager', () => {
 
     describe('Session transaction ending', () => {
         it('Should end the transaction synchronously and forward the return value', () => {
-            let innerFetch;
-            const returnValue = session(fetch => {
-                innerFetch = fetch;
+            let innerRequest;
+            const returnValue = session(request => {
+                innerRequest = request;
                 return 123;
             });
 
             eq(returnValue, 123);
-            throws(() => innerFetch('whatever', {}), Error, /fetch.*no.*longer.*valid/i);
+            throws(() => innerRequest('whatever', {}), Error, /request.*no.*longer.*valid/i);
         });
 
         it('Should end the transaction synchronously and forward the thrown value', () => {
             const error = Error('Error from test case');
 
-            let innerFetch;
+            let innerRequest;
             const forwardedError = throws(() => {
-                session(fetch => {
-                    innerFetch = fetch;
+                session(request => {
+                    innerRequest = request;
                     throw error;
                 });
             });
 
             eq(error, forwardedError);
-            throws(() => innerFetch('whatever', {}), Error, /fetch.*no.*longer.*valid/i);
+            throws(() => innerRequest('whatever', {}), Error, /request.*no.*longer.*valid/i);
         });
 
         it('Should end the transaction after the fulfillment of any returned promise', async () => {
-            let innerFetch;
-            const returnValue = await session(async fetch => {
-                innerFetch = fetch;
-                fetch('post', {id: 123});
+            let innerRequest;
+            const returnValue = await session(async request => {
+                innerRequest = request;
+                request('post', {id: 123});
 
                 await delay(10);
 
-                const result1 = fetch('post', {id: 456});
+                const result1 = request('post', {id: 456});
                 deq(result1, {dispatched: {type: 'FETCH_POST', params: {id: 456}, result: {name: 'Post Foo'}}});
 
                 return 123;
@@ -1113,20 +1113,20 @@ describe('Manager', () => {
             eq(postResource.clear.callCount, 0);
             eq(postResource.fetch.callCount, 2);
             eq(returnValue, 123);
-            throws(() => innerFetch('whatever', {}), Error, /fetch.*no.*longer.*valid/i);
+            throws(() => innerRequest('whatever', {}), Error, /request.*no.*longer.*valid/i);
         });
 
         it('Should end the transaction after the fulfillment of any returned promise (rejected)', async () => {
             const error = Error('Error from test case');
 
-            let innerFetch;
-            const promise = session(async fetch => {
-                innerFetch = fetch;
-                fetch('post', {id: 123});
+            let innerRequest;
+            const promise = session(async request => {
+                innerRequest = request;
+                request('post', {id: 123});
 
                 await delay(10);
 
-                const result1 = fetch('post', {id: 456});
+                const result1 = request('post', {id: 456});
                 deq(result1, {dispatched: {type: 'FETCH_POST', params: {id: 456}, result: {name: 'Post Foo'}}});
 
                 throw error;
@@ -1135,7 +1135,7 @@ describe('Manager', () => {
             await promise.catch(forwardedError => eq(forwardedError, error));
             eq(postResource.clear.callCount, 0);
             eq(postResource.fetch.callCount, 2);
-            throws(() => innerFetch('whatever', {}), Error, /fetch.*no.*longer.*valid/i);
+            throws(() => innerRequest('whatever', {}), Error, /request.*no.*longer.*valid/i);
         });
     });
 
@@ -1160,9 +1160,9 @@ describe('Manager', () => {
                 fetch: sinon.spy(async ({appId}, {storage}) => {
                     ++storage.fetchCount;
 
-                    return await storage.subSession(async fetch => {
+                    return await storage.subSession(async request => {
                         const app = await fetchApp(appId);
-                        fetch('user', {userId: app.createdBy});
+                        request('user', {userId: app.createdBy});
                         return {type: 'FETCH_APP', params: {appId}, result: app};
                     });
                 }),
@@ -1177,9 +1177,9 @@ describe('Manager', () => {
         });
 
         it('Should pass a persistent user modifiable object to actions', () => {
-            session(fetch => {
-                fetch('post', {id: 123});
-                fetch('post', {id: 456});
+            session(request => {
+                request('post', {id: 123});
+                request('post', {id: 456});
             });
             eq(postResource.fetch.callCount, 2);
             deq(postResource.fetch.firstCall.args[1].storage, {});
@@ -1188,8 +1188,8 @@ describe('Manager', () => {
             // different instance, so different storage
             neq(postResource.fetch.firstCall.args[1].storage, postResource.fetch.secondCall.args[1].storage);
 
-            session(fetch => {
-                fetch('post', {id: 456});
+            session(request => {
+                request('post', {id: 456});
             });
 
             // same instance, so same storage
@@ -1197,8 +1197,8 @@ describe('Manager', () => {
         });
 
         it('Should support keeping track of sub sessions using the storage object', async () => {
-            await session(async fetch => {
-                await fetch('app', {appId: 1000});
+            await session(async request => {
+                await request('app', {appId: 1000});
             });
 
             eq(appResource.fetch.callCount, 1);
@@ -1247,9 +1247,9 @@ describe('Manager', () => {
         });
 
         it('Should call onCancel callbacks when a more recent fetch supersedes the old one', () => {
-            session(fetch => {
-                fetch('train', {id: 123});
-                fetch('train', {id: 456});
+            session(request => {
+                request('train', {id: 123});
+                request('train', {id: 456});
             });
 
             eq(trainResource.fetch.callCount, 2);
@@ -1260,9 +1260,9 @@ describe('Manager', () => {
             eq(cancelCallbacks[1].callback.callCount, 0);
 
             manager.invalidate('train', {id: 123});
-            session(fetch => {
-                fetch('train', {id: 123});
-                fetch('train', {id: 456});
+            session(request => {
+                request('train', {id: 123});
+                request('train', {id: 456});
             });
             eq(trainResource.fetch.callCount, 3);
             eq(cancelCallbacks.length, 3);
@@ -1275,9 +1275,9 @@ describe('Manager', () => {
 
             // one more time to make sure that the old onCancel callback is not called again
             manager.invalidate('train', {id: 123});
-            session(fetch => {
-                fetch('train', {id: 123});
-                fetch('train', {id: 456});
+            session(request => {
+                request('train', {id: 123});
+                request('train', {id: 456});
             });
             eq(trainResource.fetch.callCount, 4);
             eq(cancelCallbacks.length, 4);
@@ -1292,9 +1292,9 @@ describe('Manager', () => {
         });
 
         it('Should call onCancel callbacks when the clear action is dispatched', () => {
-            session(fetch => {
-                fetch('train', {id: 123});
-                fetch('train', {id: 456});
+            session(request => {
+                request('train', {id: 123});
+                request('train', {id: 456});
             });
 
             eq(trainResource.fetch.callCount, 2);
@@ -1304,8 +1304,8 @@ describe('Manager', () => {
             eq(cancelCallbacks[1].id, 456);
             eq(cancelCallbacks[1].callback.callCount, 0);
 
-            session(fetch => {
-                fetch('train', {id: 456});
+            session(request => {
+                request('train', {id: 456});
             });
             eq(trainResource.clear.callCount, 1);
             eq(trainResource.fetch.callCount, 2);
@@ -1317,8 +1317,8 @@ describe('Manager', () => {
         });
 
         it('Should continue calling other onCancel callbacks if one of them throws', () => {
-            session(fetch => {
-                fetch('train', {id: 123});
+            session(request => {
+                request('train', {id: 123});
             });
 
             eq(trainResource.fetch.callCount, 1);
@@ -1333,8 +1333,8 @@ describe('Manager', () => {
             onCancel(callback2);
 
             manager.invalidate('train', {id: 123});
-            session(fetch => {
-                const error = throws(() => fetch('train', {id: 123}), Error, /error.*occurred.*callbacks/i);
+            session(request => {
+                const error = throws(() => request('train', {id: 123}), Error, /error.*occurred.*callbacks/i);
                 eq(error.errors[0].message, 'Error from test! 2');
                 eq(error.errors[1].message, 'Error from test! 0');
             });
@@ -1347,10 +1347,10 @@ describe('Manager', () => {
 
     describe('Refreshing', () => {
         it('Should immediately refresh active resource instances if manage.refresh(...) is called', () => {
-            session(fetch => {
-                fetch('post', {id: 123});
-                fetch('post', {id: 456});
-                fetch('user', {id: 789});
+            session(request => {
+                request('post', {id: 123});
+                request('post', {id: 456});
+                request('user', {id: 789});
             });
 
             eq(postResource.clear.callCount, 0);
@@ -1381,16 +1381,16 @@ describe('Manager', () => {
         });
 
         it('Should not refresh instances that are not active', () => {
-            session(fetch => {
-                fetch('animal', {id: 123});
-                fetch('animal', {id: 456});
-                fetch('animal', {id: 789});
+            session(request => {
+                request('animal', {id: 123});
+                request('animal', {id: 456});
+                request('animal', {id: 789});
             });
 
-            session(fetch => {
-                fetch('animal', {id: 123});
+            session(request => {
+                request('animal', {id: 123});
                 // 456 is now cached
-                fetch('animal', {id: 789});
+                request('animal', {id: 789});
             });
 
             eq(animalResource.clear.callCount, 0);
@@ -1428,15 +1428,15 @@ describe('Manager', () => {
             };
             manager.resource(dinoResource);
 
-            session(fetch => {
-                fetch('dino', {id: 123});
+            session(request => {
+                request('dino', {id: 123});
             });
 
             clock.tick('02:00'); // +2 minutes = 02:00
 
-            session(fetch => {
-                fetch('dino', {id: 123});
-                fetch('dino', {id: 456});
+            session(request => {
+                request('dino', {id: 123});
+                request('dino', {id: 456});
             });
             eq(dinoResource.fetch.callCount, 2);
 
@@ -1455,11 +1455,11 @@ describe('Manager', () => {
 
         it('Should pass a composite error if a fetch action throws during manager.refresh(...)', () => {
             throwFoodFetch = false;
-            session(fetch => {
-                fetch('animal', {id: 123});
-                fetch('food', {id: 456});
-                fetch('animal', {id: 789});
-                fetch('food', {id: 1011});
+            session(request => {
+                request('animal', {id: 123});
+                request('food', {id: 456});
+                request('animal', {id: 789});
+                request('food', {id: 1011});
             });
             eq(animalResource.fetch.callCount, 2);
             eq(foodResource.fetch.callCount, 2);
@@ -1494,8 +1494,8 @@ describe('Manager', () => {
             };
             manager.resource(dinoResource);
 
-            session(fetch => {
-                fetch('dino', {id: 123});
+            session(request => {
+                request('dino', {id: 123});
             });
             eq(dinoResource.fetch.callCount, 1);
 

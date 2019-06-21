@@ -3,9 +3,8 @@
 
 import * as Immutable from 'immutable';
 
-
-export type TransactionFetch<DISPATCHED> = (resourceName: string, params: ActionParams) => DISPATCHED;
-export type TransactionCallback<DISPATCHED> = (fetch: TransactionFetch<DISPATCHED>) => any;
+export type TransactionRequest<DISPATCHED> = (resourceName: string, params: ActionParams) => DISPATCHED;
+export type TransactionCallback<DISPATCHED> = (request: TransactionRequest<DISPATCHED>) => any;
 
 export type Dispatcher<DISPATCHED, ACTION> = (action: ACTION) => DISPATCHED;
 
@@ -61,4 +60,3 @@ export interface MeridviaManager<DISPATCHED, ACTION> {
     invalidate(resourceName?: string, params?: ActionParams): number;
     refresh(resourceName?: string, params?: ActionParams): number;
 }
-

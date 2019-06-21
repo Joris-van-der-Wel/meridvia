@@ -31,7 +31,7 @@ export class Transaction<DISPATCHED, ACTION> {
         Object.seal(this);
     }
 
-    public fetch(resourceName: string, params: ActionParams): DISPATCHED {
+    public request(resourceName: string, params: ActionParams): DISPATCHED {
         if (this._aborted) {
             throw this._aborted;
         }
@@ -39,8 +39,8 @@ export class Transaction<DISPATCHED, ACTION> {
         if (this._ended) {
             throw error(
                 'IllegalStateError',
-                'This fetch function is no longer valid. The fetch() function should only be called during ' +
-                'a session transaction. For example: `mySession(fetch => { fetch("something") })`'
+                'This request function is no longer valid. The transaction request() function should only be called during ' +
+                'a session transaction. For example: `mySession(request => { request("something") })`'
             );
         }
 
@@ -82,9 +82,9 @@ export class Transaction<DISPATCHED, ACTION> {
 
         // Pass through the return value of the action, this is often useful to pass a promise.
         // For example:
-        //     await mySession(async fetch => {
-        //         const userId = await fetch('session/active-user-id')
-        //         await fetch('session/user', {userId})
+        //     await mySession(async request => {
+        //         const userId = await request('session/active-user-id')
+        //         await request('session/user', {userId})
         //     })
         // this value is always DISPATCHED if performFetchAction has been successful
         const returnValue = resourceInstance.fetchReturnValue as DISPATCHED;
