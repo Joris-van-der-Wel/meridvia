@@ -707,6 +707,22 @@ describe('Manager', () => {
     });
 
     describe('manager.invalidate()', () => {
+        it('Should throw if the resource name is unknown', () => {
+            session(request => {
+                request('post', {id: 123});
+            });
+
+            const error = throws(() => manager.invalidate('invalidxxx'), /resource name.*invalidxxx.*not.*registered/i);
+            eq(error.name, 'ValueError');
+
+            session(request => {
+                request('post', {id: 123});
+            });
+
+            eq(postResource.clear.callCount, 0);
+            eq(postResource.fetch.callCount, 1);
+        });
+
         it('Should fetch again if all resources have been invalidated using manager.invalidate()', () => {
             session(request => {
                 request('post', {id: 123});
@@ -1346,6 +1362,22 @@ describe('Manager', () => {
     });
 
     describe('Refreshing', () => {
+        it('Should throw if manage.refresh(...) is called with an unknown resource', () => {
+            session(request => {
+                request('post', {id: 123});
+            });
+
+            const error = throws(() => manager.refresh('invalidxxx'), /resource name.*invalidxxx.*not.*registered/i);
+            eq(error.name, 'ValueError');
+
+            session(request => {
+                request('post', {id: 123});
+            });
+
+            eq(postResource.clear.callCount, 0);
+            eq(postResource.fetch.callCount, 1);
+        });
+
         it('Should immediately refresh active resource instances if manage.refresh(...) is called', () => {
             session(request => {
                 request('post', {id: 123});

@@ -184,8 +184,12 @@ export class Manager<DISPATCHED, ACTION> {
     IterableIterator<ResourceInstance<DISPATCHED, ACTION>> {
         if (resourceName === undefined) {
             yield * this._resourceInstances.values();
+            return;
         }
-        else if (params === undefined) {
+
+        assert(this.getResource(resourceName), 'ValueError', 'The given resource name: "', resourceName, '" has not been registered');
+
+        if (params === undefined) {
             for (const [resourceInstanceKey, resourceInstance] of this._resourceInstances) {
                 if (resourceInstanceKey.resourceName === resourceName) {
                     yield resourceInstance;
