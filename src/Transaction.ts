@@ -87,7 +87,7 @@ export class Transaction<DISPATCHED, ACTION> {
         //         await request('session/user', {userId})
         //     })
         // this value is always DISPATCHED if performFetchAction has been successful
-        const returnValue = resourceInstance.fetchReturnValue as DISPATCHED;
+        const returnValue = resourceInstance.returnLastValue() as DISPATCHED;
 
         if (isPromise(returnValue)) {
             if (!this._abortionPromise) {

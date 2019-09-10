@@ -21,8 +21,12 @@ describe('Manager', () => {
     let throwFoodFetch;
     let throwFoodClear;
     let foodResource;
+    let throwCandyFetch;
+    let candyResource;
     let rejectPhotoFetch;
     let photoResource;
+    let videoResource;
+    let rejectVideoFetch;
     let session;
     let session2;
 
@@ -44,7 +48,7 @@ describe('Manager', () => {
             clear: sinon.spy(params => ({type: 'CLEAR_USER', params})),
         };
 
-        // Another synchronous to test that we do not confuse them and it has maximumStaleness defined
+        // Another synchronous resource, to test that we do not confuse them and it has maximumStaleness defined
         postResource = {
             name: 'post',
             fetch: sinon.spy(params => ({type: 'FETCH_POST', params,  result: {name: 'Post Foo'}})),
@@ -85,6 +89,22 @@ describe('Manager', () => {
             }),
         };
 
+        // with optional throwing and maximumRejectedStaleness
+        throwCandyFetch = false;
+        candyResource = {
+            name: 'candy',
+            fetch: sinon.spy(params => {
+                if (throwCandyFetch) {
+                    throw Error('Error from test! candyResource.fetch()');
+                }
+                return {type: 'FETCH_CANDY', params, result: {name: 'Cookie'}};
+            }),
+            clear: sinon.spy(params => {
+                return {type: 'CLEAR_CANDY', params};
+            }),
+            maximumRejectedStaleness: '15m',
+        };
+
         // with promises and optional rejection
         rejectPhotoFetch = false;
         photoResource = {
@@ -102,8 +122,28 @@ describe('Manager', () => {
             }),
         };
 
+        // with promises, optional rejection and maximumRejectedStaleness
+        rejectVideoFetch = false;
+        videoResource = {
+            name: 'video',
+            fetch: sinon.spy(async params => {
+                await delay(10);
+
+                if (rejectVideoFetch) {
+                    throw Error('Error from test! videoResource.fetch()');
+                }
+                return {type: 'FETCH_VIDEO', params, result: {url: 'data:,'}};
+            }),
+            clear: sinon.spy(params => {
+                return {type: 'CLEAR_VIDEO', params};
+            }),
+            // maximumStaleness is set here and longer than maximumRejectedStaleness so that we can test that the proper value is used.
+            maximumStaleness: '60m',
+            maximumRejectedStaleness: '15m',
+        };
+
         manager.resource(userResource);
-        manager.resources([postResource, commentResource, animalResource, foodResource, photoResource]);
+        manager.resources([postResource, commentResource, animalResource, foodResource, candyResource, photoResource, videoResource]);
 
         session = manager.createSession();
     });
@@ -211,7 +251,7 @@ describe('Manager', () => {
             }
         });
 
-        it('Should not throw if the resource has not been registered', () => {
+        it('Should throw if the resource has not been registered', () => {
             session(request => {
                 throws(() => request('unknown', 0), Error, /given resource.*name.*not.*registered/i);
             });
@@ -254,6 +294,50 @@ describe('Manager', () => {
             eq(postResource.clear.callCount, 0);
             eq(postResource.fetch.callCount, 1);
             eq(result0, result1);
+        });
+
+        it('Should not re-fetch throwing resources in the next session that are still in use', () => {
+            throwFoodFetch = true;
+            let result0;
+            session(request => {
+                result0 = throws(() => request('food', {id: 456}), Error, 'Error from test! foodResource.fetch()');
+            });
+
+            eq(foodResource.clear.callCount, 0);
+            eq(foodResource.fetch.callCount, 1);
+
+            let result1;
+            throwFoodFetch = false;
+            session(request => {
+                result1 = throws(() => request('food', {id: 456}), Error, 'Error from test! foodResource.fetch()');
+            });
+
+            eq(foodResource.clear.callCount, 0);
+            eq(foodResource.fetch.callCount, 1);
+            eq(result0, result1);
+            eq(dispatcher.callCount, 0);
+        });
+
+        it('Should not re-fetch rejecting resources in the next session that are still in use', async () => {
+            rejectPhotoFetch = true;
+            let result0;
+            await session(async request => {
+                result0 = await isRejected(request('photo', {id: 987}), Error, 'Error from test! photoResource.fetch()');
+            });
+
+            eq(photoResource.clear.callCount, 0);
+            eq(photoResource.fetch.callCount, 1);
+
+            let result1;
+            throwFoodFetch = false;
+            await session(async request => {
+                result1 = await isRejected(request('photo', {id: 987}), Error, 'Error from test! photoResource.fetch()');
+            });
+
+            eq(photoResource.clear.callCount, 0);
+            eq(photoResource.fetch.callCount, 1);
+            eq(result0, result1);
+            eq(dispatcher.length, 1);
         });
 
         it('Should fetch multiple times for resources that only differ in params', () => {
@@ -318,7 +402,6 @@ describe('Manager', () => {
             eq(typeof dispatcher.firstCall.args[0].then, 'function');
         });
 
-
         it('Should not clear resources if a different session is using them', () => {
             session2 = manager.createSession();
             session(request => {
@@ -332,7 +415,6 @@ describe('Manager', () => {
             eq(postResource.clear.callCount, 0);
             eq(postResource.fetch.callCount, 1);
         });
-
 
         it('Should continue on clearing other resources if the clear action throws', () => {
             throwFoodClear = true;
@@ -354,67 +436,6 @@ describe('Manager', () => {
             session(request => {});
             eq(foodResource.clear.callCount, 1);
             eq(dispatcher.callCount, 5);
-        });
-
-        it('Should attempt the fetch again if the action had thrown', () => {
-            throwFoodFetch = true;
-            session(request => {
-                throws(() => request('food', {id: 456}), Error, 'Error from test! foodResource.fetch()');
-                throwFoodFetch = false;
-                request('food', {id: 456});
-            });
-
-            eq(foodResource.fetch.callCount, 2);
-            eq(foodResource.clear.callCount, 0);
-            deq(foodResource.fetch.firstCall.args[0], {id: 456});
-            deq(foodResource.fetch.secondCall.args[0], {id: 456});
-
-            deq(dispatcher.args, [
-                [{type: 'FETCH_FOOD', params: {id: 456}, result: {name: 'Spam'}}],
-            ]);
-        });
-
-        it('Should attempt the fetch again if the action threw during the previous session', () => {
-            throwFoodFetch = true;
-            session(request => {
-                throws(() => request('food', {id: 456}), Error, 'Error from test! foodResource.fetch()');
-            });
-
-            throwFoodFetch = false;
-            session(request => {
-                request('food', {id: 456});
-            });
-
-            eq(foodResource.fetch.callCount, 2);
-            eq(foodResource.clear.callCount, 0);
-            deq(foodResource.fetch.firstCall.args[0], {id: 456});
-            deq(foodResource.fetch.secondCall.args[0], {id: 456});
-
-            deq(dispatcher.args, [
-                [{type: 'FETCH_FOOD', params: {id: 456}, result: {name: 'Spam'}}],
-            ]);
-        });
-
-        it('Should attempt the fetch again if the action returned a rejected promise during the previous session', async () => {
-            rejectPhotoFetch = true;
-            await session(async request => {
-                await isRejected(request('photo', {id: 987}), Error, 'Error from test! photoResource.fetch()');
-            });
-
-            rejectPhotoFetch = false;
-            await session(async request => {
-                await request('photo', {id: 987});
-            });
-
-            eq(photoResource.fetch.callCount, 2);
-            eq(photoResource.clear.callCount, 0);
-            deq(photoResource.fetch.firstCall.args[0], {id: 987});
-            deq(photoResource.fetch.secondCall.args[0], {id: 987});
-
-            eq(dispatcher.callCount, 2);
-
-            await isRejected(dispatcher.firstCall.args[0], Error, 'Error from test! photoResource.fetch()');
-            deq(await dispatcher.secondCall.args[0], {type: 'FETCH_PHOTO', params: {id: 987}, result: {url: 'data:,'}});
         });
 
         it('Should allow for the clear callback to be null', async () => {
@@ -987,6 +1008,113 @@ describe('Manager', () => {
             eq(postResource.fetch.callCount, 4);
         });
 
+        it('Should re-fetch stale throwing resources if maximumRejectedStaleness is set and reached', () => {
+            throwFoodFetch = true;
+            throwCandyFetch = true;
+
+            session(request => {
+                throws(() => request('food', {id: 123}));
+                throws(() => request('candy', {id: 123}));
+                throws(() => request('candy', {id: 456}));
+            });
+            eq(foodResource.clear.callCount, 0);
+            eq(foodResource.fetch.callCount, 1);
+            eq(candyResource.clear.callCount, 0);
+            eq(candyResource.fetch.callCount, 2);
+
+            clock.tick('15:00'); // +15 minutes
+            session(request => {
+                throws(() => request('food', {id: 123}));
+                throws(() => request('candy', {id: 123}));
+                throws(() => request('candy', {id: 456}));
+            });
+            // no changes yet, staleness is set to 15 minutes
+            eq(candyResource.clear.callCount, 0);
+            eq(candyResource.fetch.callCount, 2);
+
+            clock.tick(1); // +1 ms to push over the staleness limit
+            session(request => {
+                throws(() => request('food', {id: 123}));
+                throws(() => request('candy', {id: 123}));
+                throws(() => request('candy', {id: 456}));
+            });
+            eq(foodResource.clear.callCount, 0);
+            eq(foodResource.fetch.callCount, 1);
+            eq(candyResource.clear.callCount, 0);
+            eq(candyResource.fetch.callCount, 4);
+        });
+
+        it('Should re-fetch stale rejecting resources if maximumRejectedStaleness is set and reached', async () => {
+            rejectPhotoFetch = true;
+            rejectVideoFetch = true;
+
+            await session(async request => {
+                await isRejected(request('photo', {id: 123}));
+                await isRejected(request('video', {id: 123}));
+                await isRejected(request('video', {id: 456}));
+            });
+            eq(photoResource.clear.callCount, 0);
+            eq(photoResource.fetch.callCount, 1);
+            eq(videoResource.clear.callCount, 0);
+            eq(videoResource.fetch.callCount, 2);
+
+            clock.tick('15:00'); // +15 minutes
+            await session(async request => {
+                await isRejected(request('photo', {id: 123}));
+                await isRejected(request('video', {id: 123}));
+                await isRejected(request('video', {id: 456}));
+            });
+            // no changes yet, staleness is set to 15 minutes
+            eq(videoResource.clear.callCount, 0);
+            eq(videoResource.fetch.callCount, 2);
+
+            clock.tick(1); // +1 ms to push over the staleness limit
+            await session(async request => {
+                await isRejected(request('photo', {id: 123}));
+                await isRejected(request('video', {id: 123}));
+                await isRejected(request('video', {id: 456}));
+            });
+            eq(photoResource.clear.callCount, 0);
+            eq(photoResource.fetch.callCount, 1);
+            eq(videoResource.clear.callCount, 0);
+            eq(videoResource.fetch.callCount, 4);
+        });
+
+        it('Should set maximumRejectedStaleness to the same value as maximumStaleness by default', () => {
+            const gameResource = {
+                name: 'game',
+                fetch: sinon.spy(params => {
+                    throw Error('Error from test! gameResource.fetch()');
+                }),
+                clear: sinon.spy(params => {
+                    return {type: 'CLEAR_GAME', params};
+                }),
+                maximumStaleness: '15m',
+            };
+            manager.resource(gameResource);
+
+            session(request => {
+                throws(() => request('game', {id: 123}));
+            });
+            eq(gameResource.clear.callCount, 0);
+            eq(gameResource.fetch.callCount, 1);
+
+            clock.tick('15:00'); // +15 minutes
+            session(request => {
+                throws(() => request('game', {id: 123}));
+            });
+            // no changes yet, staleness is set to 15 minutes
+            eq(gameResource.clear.callCount, 0);
+            eq(gameResource.fetch.callCount, 1);
+
+            clock.tick(1); // +1 ms to push over the staleness limit
+            session(request => {
+                throws(() => request('game', {id: 123}));
+            });
+            eq(gameResource.clear.callCount, 0);
+            eq(gameResource.fetch.callCount, 2);
+        });
+
         it('Should not re-fetch resources if maximumStaleness is not set', () => {
             session(request => {
                 request('user', {id: 123});
@@ -998,9 +1126,49 @@ describe('Manager', () => {
             session(request => {
                 request('user', {id: 123});
             });
-            // maximum staleness is not set for user  15 minutes
+            // maximum staleness is not set for user
             eq(userResource.clear.callCount, 0);
             eq(userResource.fetch.callCount, 1);
+        });
+
+        it('Should not re-fetch throwing resources if maximumRejectedStaleness is not set', () => {
+            throwFoodFetch = true;
+            let result0;
+            session(request => {
+                result0 = throws(() => request('food', {id: 456}), Error, 'Error from test! foodResource.fetch()');
+            });
+            eq(foodResource.clear.callCount, 0);
+            eq(foodResource.fetch.callCount, 1);
+
+            clock.tick('12:00:00'); // +12 hours
+            let result1;
+            session(request => {
+                result1 = throws(() => request('food', {id: 456}), Error, 'Error from test! foodResource.fetch()');
+            });
+            // maximum staleness is not set for food
+            eq(foodResource.clear.callCount, 0);
+            eq(foodResource.fetch.callCount, 1);
+            eq(result0, result1);
+        });
+
+        it('Should not re-fetch rejecting resources if maximumRejectedStaleness is not set', async () => {
+            rejectPhotoFetch = true;
+            let result0;
+            await session(async request => {
+                result0 = await isRejected(request('photo', {id: 987}), Error, 'Error from test! photoResource.fetch()');
+            });
+            eq(photoResource.clear.callCount, 0);
+            eq(photoResource.fetch.callCount, 1);
+
+            clock.tick('12:00:00'); // +12 hours
+            let result1;
+            await session(async request => {
+                result1 = await isRejected(request('photo', {id: 987}), Error, 'Error from test! photoResource.fetch()');
+            });
+            // maximum staleness is not set for food
+            eq(photoResource.clear.callCount, 0);
+            eq(photoResource.fetch.callCount, 1);
+            eq(result0, result1);
         });
     });
 

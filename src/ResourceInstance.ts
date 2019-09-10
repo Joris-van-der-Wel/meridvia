@@ -4,16 +4,19 @@ import {ResourceInstanceKey} from './ResourceInstanceKey';
 import {Resource} from './Resource';
 import {Session} from './Session';
 import {UserStorage} from './libraryTypes';
+import {error} from './error';
+
+type ReturnValue<T> = {value: T} | {error: any};
 
 export class ResourceInstance<DISPATCHED, ACTION> {
     public readonly resourceInstanceKey: ResourceInstanceKey;
     public readonly resource: Resource<ACTION>;
-    public fetchReturnValue: DISPATCHED | null;
+    public fetchReturnValue: ReturnValue<DISPATCHED> | null;
     public readonly activeForSessions: Set<Session<DISPATCHED, ACTION>>;
     public lastUsageMs: number;
     public lastFetchAttemptMs: number;
-    public lastFetchMs: number;
     public lastFetchCompletedMs: number;
+    public lastFetchRejected: boolean;
     public activeFetchIdentifier: symbol;
     public forceInvalidated: boolean;
     public readonly userStorage: UserStorage;
@@ -22,7 +25,7 @@ export class ResourceInstance<DISPATCHED, ACTION> {
     public constructor(resourceInstanceKey: ResourceInstanceKey, resource: Resource<ACTION>, userStorage: UserStorage) {
         this.resourceInstanceKey = resourceInstanceKey;
         this.resource = resource;
-        // the return value of dispatch(resource.fetch(...)):
+        // the return value of dispatch(resource.fetch(...)) (including rejected promises and thrown errors):
         this.fetchReturnValue = null;
         // The `Session`s that this resource instance is currently active for
         this.activeForSessions = new Set();
@@ -30,10 +33,10 @@ export class ResourceInstance<DISPATCHED, ACTION> {
         this.lastUsageMs = 0;
         // Date.now() value; The last time the fetch action was attempted:
         this.lastFetchAttemptMs = 0;
-        // Date.now() value; The last time the fetch action was successfully dispatched:
-        this.lastFetchMs = 0;
         // Date.now() value; The last time the dispatched fetch action completed (after resolving promises):
         this.lastFetchCompletedMs = 0;
+        // If true, the last dispatched fetch action ended up with a thrown error or a rejected promise
+        this.lastFetchRejected = false;
         // Reset during every fetch action so that we can track if it is still the latest one
         this.activeFetchIdentifier = Symbol();
         // Manually invalidated by the user:
@@ -58,14 +61,24 @@ export class ResourceInstance<DISPATCHED, ACTION> {
     }
 
     public isStale(now: number): boolean {
-        return this.forceInvalidated ||
-               (this.resource.hasMaximumStaleness() && now - this.lastFetchMs > this.resource.maximumStalenessMs);
+        if (this.forceInvalidated) {
+            return true;
+        }
+
+        const lastFetchAgoMs = now - this.lastFetchAttemptMs;
+
+        if (this.lastFetchRejected) {
+            return this.resource.hasMaximumRejectedStaleness() && lastFetchAgoMs > this.resource.maximumRejectedStalenessMs;
+        }
+        else {
+            return this.resource.hasMaximumStaleness() && lastFetchAgoMs > this.resource.maximumStalenessMs;
+        }
     }
 
     public isCacheable(now: number): boolean {
         return !this.forceInvalidated &&
                this.resource.isCacheable() &&
-               now - this.lastFetchMs <= this.resource.cacheMaxAgeMs;
+               now - this.lastFetchAttemptMs <= this.resource.cacheMaxAgeMs;
     }
 
     public shouldBeCleared(now: number): boolean {
@@ -79,7 +92,18 @@ export class ResourceInstance<DISPATCHED, ACTION> {
             now - this.lastFetchCompletedMs >= this.resource.refreshIntervalMs;
     }
 
-    public performFetchAction(dispatcher: (action: ACTION) => DISPATCHED, now: number, {eatErrors = false} = {}): void {
+    public returnLastValue(): DISPATCHED | null {
+        /* istanbul ignore if */
+        if (!this.fetchReturnValue) {
+            throw error('AssertionError', 'ResourceInstance#returnLastValue() called without ever having attempted a fetch');
+        }
+        if ('error' in this.fetchReturnValue) {
+            throw this.fetchReturnValue.error;
+        }
+        return this.fetchReturnValue.value;
+    }
+
+    public performFetchAction(dispatcher: (action: ACTION) => DISPATCHED, now: number, {logErrors = false} = {}): void {
         this.deferredCleanupFetch.invoke();
 
         const fetchIdentifier = Symbol();
@@ -95,50 +119,50 @@ export class ResourceInstance<DISPATCHED, ACTION> {
             return 0;
         };
 
+        const params = this.resourceInstanceKey.toParams();
+        const meta = {
+            storage: this.userStorage,
+            invalidate,
+            onCancel: this.deferredCleanupFetch.defer,
+        };
+
         try {
-            const params = this.resourceInstanceKey.toParams();
-            const meta = {
-                storage: this.userStorage,
-                invalidate,
-                onCancel: this.deferredCleanupFetch.defer,
-            };
             const action = this.resource.fetch(params, meta);
             let returnValue = dispatcher(action);
 
             if (isPromise(returnValue)) {
                 const promise = returnValue.then(async (value: any): Promise<any> => {
+                    this.lastFetchRejected = false;
                     this.lastFetchCompletedMs = Date.now();
                     return value;
                 }, async (err: any): Promise<any> => {
+                    this.lastFetchRejected = true;
                     this.lastFetchCompletedMs = Date.now();
-                    invalidate();
                     return Promise.reject(err);
                 });
 
-                // if we end up here that means DISPATCHED allows for Promise
+                // if we end up here that means DISPATCHED allows for Promise, that means casting is okay
                 returnValue = promise as any as DISPATCHED;
             }
             else {
+                this.lastFetchRejected = false;
                 this.lastFetchCompletedMs = Date.now();
             }
 
-            // all of this should be _after_ dispatching the action, in case it throws:
-            this.fetchReturnValue = returnValue;
-            this.lastFetchMs = now;
+            this.fetchReturnValue = {value: returnValue};
         }
         catch (err) {
-            invalidate();
+            this.lastFetchRejected = true;
+            this.lastFetchCompletedMs = Date.now();
+            this.fetchReturnValue = {error: err};
 
-            if (eatErrors) {
+            if (logErrors) {
                 /* istanbul ignore else */
                 // eslint-disable-next-line no-console
                 if (typeof console === 'object' && typeof console.error === 'function')  {
                     // eslint-disable-next-line no-console
                     console.error('Error while dispatching fetch action for', this.resource.name, 'resource:', err, err.stack);
                 }
-            }
-            else {
-                throw err;
             }
         }
     }

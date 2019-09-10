@@ -164,15 +164,16 @@ const manager = createManager();
 #### Manager
 
 #### [`manager.resource(options)`](#managerresourceoptions)
-| Argument                  | Type                      | Default      |                                                               |
-| ------------------------- | ------------------------- | ------------ | ------------------------------------------------------------- |
-| options.name              | string                    | __required__ | A unique __resource name__ for this __resource__. The same name can later be used to request this __resource__. |
-| options.fetch             | function(params, options) | __required__ | The [__`fetch`__ callback](#fetch-callback) for this __resource__. Called whenever the asynchronous data should be retrieved. |
-| options.clear             | function(params, options) | `null`       | The [__`clear`__ callback](#clear-callback) for this __resource__. Called whenever asynchronous data that has been previously retrieved, is no longer in use. |
-| options.initStorage       | function(params)          | () => ({})   | Called the first time a __resource__ is fetched, the return value is available to the other actions of the same __resource__. |
-| options.maximumStaleness  | [Time interval](#time-interval-values)        | 0            | The maximum amount of time that the data of a fetched __resource__ may be reused in a future __transaction__. A value of 0 means forever/infinite. |
-| options.cacheMaxAge       | [Time interval](#time-interval-values)        | 0            | The maximum amount of time that the data of a fetched __resource__ may be cached if no [__`Session`__](#session-api) is using the __resource__. A value of 0 disables caching. |
-| options.refreshInterval   | [Time interval](#time-interval-values)        | 0            | How often to fetch the __resource__ again, as long as there is a [__`Session`__](#session-api) using this __resource__. A value of 0 disables refreshing. |
+| Argument                          | Type                      | Default            |                                                               |
+| --------------------------------- | ------------------------- | ------------------ | ------------------------------------------------------------- |
+| options.name                      | string                    | __required__       | A unique __resource name__ for this __resource__. The same name can later be used to request this __resource__. |
+| options.fetch                     | function(params, options) | __required__       | The [__`fetch`__ callback](#fetch-callback) for this __resource__. Called whenever the asynchronous data should be retrieved. |
+| options.clear                     | function(params, options) | `null`             | The [__`clear`__ callback](#clear-callback) for this __resource__. Called whenever asynchronous data that has been previously retrieved, is no longer in use. |
+| options.initStorage               | function(params)          | () => ({})         | Called the first time a __resource__ is fetched, the return value is available to the other actions of the same __resource__. |
+| options.maximumStaleness          | [Time interval](#time-interval-values)        | 0                  | The maximum amount of time that the data of a fetched __resource__ will be reused in a future __transaction__. A value of 0 means forever/infinite. |
+| options.maximumRejectedStaleness  | [Time interval](#time-interval-values)        | `maximumStaleness` | The maximum amount of time that the rejected or thrown error of a fetched __resource__ will be reused in a future __transaction__. A value of 0 means forever/infinite. |
+| options.cacheMaxAge               | [Time interval](#time-interval-values)        | 0                  | The maximum amount of time that the data of a fetched __resource__ may be cached if no [__`Session`__](#session-api) is using the __resource__. A value of 0 disables caching. |
+| options.refreshInterval           | [Time interval](#time-interval-values)        | 0                  | How often to fetch the __resource__ again, as long as there is a [__`Session`__](#session-api) using this __resource__. A value of 0 disables refreshing. |
 
 __Return value__: `undefined` \
 __Throws__: `IllegalStateError` if the [__`Manager`__](#manager-api) has been destroyed \

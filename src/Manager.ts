@@ -98,14 +98,25 @@ export class Manager<DISPATCHED, ACTION> {
             cacheMaxAge = 0,
             refreshInterval = 0,
         } = options;
+        const {maximumRejectedStaleness = maximumStaleness} = options;
         assert(typeof name === 'string', 'TypeError', '`name` must be a string');
         assert(typeof fetch === 'function', 'TypeError', '`fetch` must be a function');
         assert(typeof clear === 'function' || clear === null, 'TypeError', '`clear` must be a function or null');
         assert(!this._resources.has(name), 'ValueError', 'The given `name` is already in use');
         const maximumStalenessMs = parseTimeInterval(maximumStaleness, 'maximumStaleness');
+        const maximumRejectedStalenessMs = parseTimeInterval(maximumRejectedStaleness, 'maximumRejectedStalenessMs');
         const cacheMaxAgeMs = parseTimeInterval(cacheMaxAge, 'cacheMaxAge');
         const refreshIntervalMs = parseTimeInterval(refreshInterval, 'refreshInterval');
-        const resource = new Resource({name, initStorage, fetch, clear, maximumStalenessMs, cacheMaxAgeMs, refreshIntervalMs});
+        const resource = new Resource({
+            name,
+            initStorage,
+            fetch,
+            clear,
+            maximumStalenessMs,
+            maximumRejectedStalenessMs,
+            cacheMaxAgeMs,
+            refreshIntervalMs,
+        });
         this._resources = this._resources.set(name, resource);
     }
 
@@ -158,7 +169,7 @@ export class Manager<DISPATCHED, ACTION> {
                 ++refreshableResources;
 
                 if (resourceInstance.shouldRefresh(now)) {
-                    resourceInstance.performFetchAction(this.dispatcher, now, {eatErrors: true});
+                    resourceInstance.performFetchAction(this.dispatcher, now, {logErrors: true});
                 }
             }
         }
@@ -225,6 +236,7 @@ export class Manager<DISPATCHED, ACTION> {
             if (resourceInstance.isActive()) {
                 compositeError.try((): void => {
                     resourceInstance.performFetchAction(this.dispatcher, now);
+                    resourceInstance.returnLastValue();
                 });
                 ++matches;
             }

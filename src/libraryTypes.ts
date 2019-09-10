@@ -31,6 +31,7 @@ export interface ResourceDefinition<ACTION> {
     fetch: FetchCallback<ACTION>;
     clear: ClearCallback<ACTION> | null;
     maximumStaleness?: number | string;
+    maximumRejectedStaleness?: number | string;
     cacheMaxAge?: number | string;
     refreshInterval?: number | string;
 }
