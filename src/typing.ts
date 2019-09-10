@@ -21,20 +21,13 @@ export const isObject = (value: any): value is Object => typeof value === 'objec
 export const isPromise = (value: any): value is Promise<any> => isObject(value) && typeof value.then === 'function';
 
 // Fix missing [Symbol.iterator] type information in immutable v3:
-// (add additional methods as we start using them)
-export interface ImmutableMap<K, V> extends Immutable.Map<K, V> {
-    [Symbol.iterator]: () => IterableIterator<[K, V]>;
-    set(key: K, value: V): ImmutableMap<K, V>;
-    asMutable(): ImmutableMap<K, V>;
-    asImmutable(): ImmutableMap<K, V>;
-    values(): IterableIterator<V>;
+export interface IterateImmutable {
+    <K, V>(value: Immutable.Map<K, V>): IterableIterator<[K, V]>;
+    <T>(value: Immutable.List<T>): IterableIterator<T>;
+    <T>(value: Immutable.Set<T>): IterableIterator<T>;
 }
-export interface ImmutableSet<T> extends Immutable.Set<T> {
-    [Symbol.iterator]: () => IterableIterator<T>;
-    add(value: T): ImmutableSet<T>;
-    delete(value: T): ImmutableSet<T>;
-    clear(): ImmutableSet<T>;
-    subtract(...iterables: Immutable.Iterable<any, T>[]): ImmutableSet<T>;
-    subtract(...iterables: T[][]): ImmutableSet<T>;
+export interface IterateImmutableValues {
+    <K, V>(value: Immutable.Map<K, V>): IterableIterator<V>;
 }
-
+export const iterateImmutable: IterateImmutable = ((value: any): any => value);
+export const iterateImmutableValues: IterateImmutableValues = ((value: any): any => value.values());

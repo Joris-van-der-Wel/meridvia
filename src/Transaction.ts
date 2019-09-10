@@ -5,7 +5,7 @@ import {Manager} from './Manager';
 import {Session} from './Session';
 import {ResourceInstanceKey} from './ResourceInstanceKey';
 import {ResourceInstance} from './ResourceInstance';
-import {ImmutableSet, isPromise} from './typing';
+import {isPromise, iterateImmutable} from './typing';
 import {ActionParams} from './libraryTypes';
 import {ExplicitPromise, createExplicitPromise} from './explicitPromise';
 
@@ -16,7 +16,7 @@ export class Transaction<DISPATCHED, ACTION> {
     private _aborted: Error | null;
     private _abortionPromise: ExplicitPromise<void, Error> | null;
     private _ended: boolean;
-    private _resourceInstances: ImmutableSet<ResourceInstance<DISPATCHED, ACTION>>;
+    private _resourceInstances: Immutable.Set<ResourceInstance<DISPATCHED, ACTION>>;
 
     public constructor(manager: Manager<DISPATCHED, ACTION>, session: Session<DISPATCHED, ACTION>, transactionBeginMs: number) {
         this._manager = manager;
@@ -27,7 +27,7 @@ export class Transaction<DISPATCHED, ACTION> {
         // all, to avoid UnhandledPromiseRejectionWarning
         this._abortionPromise = null;
         this._ended = false;
-        this._resourceInstances = Immutable.Set() as ImmutableSet<ResourceInstance<DISPATCHED, ACTION>>;
+        this._resourceInstances = Immutable.Set();
         Object.seal(this);
     }
 
@@ -105,7 +105,7 @@ export class Transaction<DISPATCHED, ACTION> {
     }
 
     // reached the end of the transaction callback
-    public end(transactionsToCleanUp: ImmutableSet<Transaction<DISPATCHED, ACTION>>): void {
+    public end(transactionsToCleanUp: Immutable.Set<Transaction<DISPATCHED, ACTION>>): void {
         assert(!this._ended, 'Transaction already ended');
         this._ended = true;
 
@@ -114,13 +114,13 @@ export class Transaction<DISPATCHED, ACTION> {
         // If all sessions are cleared, the clear action will be called by the
         // Manager (unless caching has been set)
         const previousInstancesSets = [];
-        for (const transaction of transactionsToCleanUp) {
+        for (const transaction of iterateImmutable(transactionsToCleanUp)) {
             previousInstancesSets.push(transaction._resourceInstances);
         }
-        const previousInstances = Immutable.Set().union(...previousInstancesSets) as ImmutableSet<ResourceInstance<DISPATCHED, ACTION>>;
+        const previousInstances = Immutable.Set().union(...previousInstancesSets) as Immutable.Set<ResourceInstance<DISPATCHED, ACTION>>;
 
         const removedInstances = previousInstances.subtract(this._resourceInstances);
-        for (const resourceInstance of removedInstances) {
+        for (const resourceInstance of iterateImmutable(removedInstances)) {
             resourceInstance.clearActiveForSession(this._session);
         }
 
@@ -136,7 +136,7 @@ export class Transaction<DISPATCHED, ACTION> {
 
     public destroyedSession(reason: Error): void {
         this.abort(reason);
-        for (const resourceInstance of this._resourceInstances) {
+        for (const resourceInstance of iterateImmutable(this._resourceInstances)) {
             resourceInstance.clearActiveForSession(this._session);
         }
     }

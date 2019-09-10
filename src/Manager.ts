@@ -8,7 +8,6 @@ import {ResourceInstanceKey} from './ResourceInstanceKey';
 import {assert} from './error';
 import {createCompositeError} from './compositeError';
 import {ResourceInstance} from './ResourceInstance';
-import {ImmutableMap, ImmutableSet} from './typing';
 import {
     ActionParams,
     UserStorage,
@@ -19,19 +18,20 @@ import {
     MeridviaSession,
     SessionOptions,
 } from './libraryTypes';
+import {iterateImmutable, iterateImmutableValues} from './typing';
 
 const DEFAULT_DISPATCHER = <DISPATCHED, ACTION>(value: ACTION): DISPATCHED => value as any as DISPATCHED;
 const DEFAULT_PERIODIC_WORK_INTERVAL = 10000;
 const DEFAULT_INIT_STORAGE = (): UserStorage => ({});
 
-type ResourceInstances<DISPATCHED, ACTION> = ImmutableMap<ResourceInstanceKey, ResourceInstance<DISPATCHED, ACTION>>;
+type ResourceInstances<DISPATCHED, ACTION> = Immutable.Map<ResourceInstanceKey, ResourceInstance<DISPATCHED, ACTION>>;
 
 export class Manager<DISPATCHED, ACTION> {
     public readonly dispatcher: Dispatcher<DISPATCHED, ACTION>;
     public readonly allowTransactionAbort: boolean;
     private _destroyed: boolean;
-    private _sessions: ImmutableSet<MeridviaSession<DISPATCHED>>;
-    private _resources: ImmutableMap<string, Resource<ACTION>>;
+    private _sessions: Immutable.Set<MeridviaSession<DISPATCHED>>;
+    private _resources: Immutable.Map<string, Resource<ACTION>>;
     private _resourceInstances: ResourceInstances<DISPATCHED, ACTION>;
     private readonly _periodicWorkTimer: Timer;
 
@@ -50,9 +50,9 @@ export class Manager<DISPATCHED, ACTION> {
         this.dispatcher = dispatcher;
         this.allowTransactionAbort = allowTransactionAbort;
         this._destroyed = false;
-        this._sessions = Immutable.Set() as ImmutableSet<MeridviaSession<DISPATCHED>>;
-        this._resources = Immutable.Map() as ImmutableMap<string, Resource<ACTION>>;
-        this._resourceInstances = Immutable.Map() as ResourceInstances<DISPATCHED, ACTION>;
+        this._sessions = Immutable.Set();
+        this._resources = Immutable.Map();
+        this._resourceInstances = Immutable.Map();
         // A single timer is used so that actions are batched together as much as possible (as opposed to setting a precisely
         // accurate timer for each resource instance), this is more performant if the user is using something like
         // redux-batched-subscribe
@@ -63,7 +63,7 @@ export class Manager<DISPATCHED, ACTION> {
     public destroy(): void {
         this._destroyed = true;
 
-        for (const session of this._sessions) {
+        for (const session of iterateImmutable(this._sessions)) {
             session.destroy();
         }
         assert(this._sessions.size === 0, 'AssertionError', 'this._sessions should be empty');
@@ -129,7 +129,7 @@ export class Manager<DISPATCHED, ACTION> {
         const resourceInstances = this._resourceInstances.asMutable();
         const dispatchClearTodo = [];
 
-        for (const [resourceInstanceKey, resourceInstance] of  this._resourceInstances) {
+        for (const [resourceInstanceKey, resourceInstance] of iterateImmutable(this._resourceInstances)) {
             if (resourceInstance.shouldBeCleared(now)) {
                 resourceInstances.delete(resourceInstanceKey);
                 dispatchClearTodo.push(resourceInstance);
@@ -153,7 +153,7 @@ export class Manager<DISPATCHED, ACTION> {
         let refreshableResources = 0;
         const now = Date.now();
 
-        for (const resourceInstance of this._resourceInstances.values()) {
+        for (const resourceInstance of iterateImmutableValues(this._resourceInstances)) {
             if (resourceInstance.resource.hasRefreshInterval()) {
                 ++refreshableResources;
 
@@ -183,14 +183,14 @@ export class Manager<DISPATCHED, ACTION> {
     public* findInstances(resourceName: string | undefined, params: ActionParams | undefined):
     IterableIterator<ResourceInstance<DISPATCHED, ACTION>> {
         if (resourceName === undefined) {
-            yield * this._resourceInstances.values();
+            yield * iterateImmutableValues(this._resourceInstances);
             return;
         }
 
         assert(this.getResource(resourceName), 'ValueError', 'The given resource name: "', resourceName, '" has not been registered');
 
         if (params === undefined) {
-            for (const [resourceInstanceKey, resourceInstance] of this._resourceInstances) {
+            for (const [resourceInstanceKey, resourceInstance] of iterateImmutable(this._resourceInstances)) {
                 if (resourceInstanceKey.resourceName === resourceName) {
                     yield resourceInstance;
                 }

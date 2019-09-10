@@ -3,21 +3,21 @@ import * as Immutable from 'immutable';
 import {assert, error} from './error';
 import {Manager} from './Manager';
 import {Transaction} from './Transaction';
-import {ImmutableSet, isPromise} from './typing';
+import {isPromise, iterateImmutable} from './typing';
 import {ActionParams, MeridviaSession, TransactionCallback} from './libraryTypes';
 
 export class Session<DISPATCHED, ACTION> {
     private readonly _manager: Manager<DISPATCHED, ACTION>;
     private _destroyed: boolean;
     private _activeTransaction: Transaction<DISPATCHED, ACTION> | null;
-    private _transactionsToCleanUp: ImmutableSet<Transaction<DISPATCHED, ACTION>>;
+    private _transactionsToCleanUp: Immutable.Set<Transaction<DISPATCHED, ACTION>>;
     public readonly allowTransactionAbort: boolean;
 
     public constructor(manager: Manager<DISPATCHED, ACTION>, options: {allowTransactionAbort: boolean}) {
         this._manager = manager;
         this._destroyed = false;
         this._activeTransaction = null;
-        this._transactionsToCleanUp = Immutable.Set() as ImmutableSet<Transaction<DISPATCHED, ACTION>>;
+        this._transactionsToCleanUp = Immutable.Set();
         this.allowTransactionAbort = options.allowTransactionAbort;
         Object.seal(this);
     }
@@ -110,7 +110,7 @@ export class Session<DISPATCHED, ACTION> {
             'The session transaction has been aborted because the session has been destroyed.'
         );
 
-        for (const transaction of this._transactionsToCleanUp) {
+        for (const transaction of iterateImmutable(this._transactionsToCleanUp)) {
             transaction.destroyedSession(abortReason);
         }
 
