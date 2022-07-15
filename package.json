@@ -26,7 +26,7 @@
     "test:unit": "mocha \"test/unit/**/*.test.js\"",
     "test:unit:coverage": "nyc --all mocha \"test/unit/**/*.test.js\"",
     "test:unit:coveralls": "npm run test:unit:coverage && nyc report --reporter=text-lcov | coveralls",
-    "test:integration:prepare": "rm -rf test-generated && tsc -p test/integration/reduxAndRouter5",
+    "test:integration:prepare": "rm -rf test-generated && tsc -p tsconfig.integration-redux.json",
     "test:integration": "npm run test:integration:prepare && mocha \"test/integration/**/*.test.js\"",
     "test:coverage-report": "nyc report --reporter=html",
     "test": "npm run lint && npm run build && npm run test:unit:coverage && npm run test:integration && npm run test:coverage-report"
@@ -55,27 +55,27 @@
     "immutable": ">= 3"
   },
   "devDependencies": {
-    "@typescript-eslint/eslint-plugin": "^1.7.0",
-    "@typescript-eslint/parser": "^1.7.0",
+    "@typescript-eslint/eslint-plugin": "^5.30.6",
+    "@typescript-eslint/parser": "^5.30.6",
     "chai": "^4.2.0",
     "chai-as-promised": "^7.1.1",
     "coveralls": "^3.0.3",
-    "eslint": "^5.16.0",
+    "eslint": "^8.19.0",
     "eslint-plugin-import": "^2.17.2",
     "handlebars": "^4.1.2",
-    "jsdom": "^15.1.0",
-    "mocha": "^6.1.4",
+    "jsdom": "^20.0.0",
+    "mocha": "^10.0.0",
     "mocha-sugar-free": "^1.4.0",
-    "nyc": "^14.0.0",
-    "react": "^16.8.6",
-    "react-dom": "^16.8.6",
-    "react-redux": "^7.0.3",
+    "nyc": "^15.1.0",
+    "react": "^18.2.0",
+    "react-dom": "^18.2.0",
+    "react-redux": "^8.0.2",
     "redux": "^4.0.1",
     "redux-promise": "^0.6.0",
     "redux-thunk": "^2.3.0",
-    "router5": "^7.0.2",
-    "sinon": "^7.3.2",
-    "typescript": "^3.4.5"
+    "router5": "^8.0.1",
+    "sinon": "^14.0.0",
+    "typescript": "^4.7.4"
   },
   "nyc": {
     "include": [

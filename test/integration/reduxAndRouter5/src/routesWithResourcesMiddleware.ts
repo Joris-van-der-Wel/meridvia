@@ -1,10 +1,10 @@
-import {Dependencies, Middleware, Route, Router, State} from 'router5';
+import {Middleware, Route, Router, State} from 'router5';
 
 import {MeridviaSession, TransactionRequest} from '../../../..';
 
 type MiddlewareFactory = (
     router: Router,
-    dependencies: Dependencies
+    dependencies: Record<string, any>
 ) => Middleware;
 
 export interface RouteWithResources<DISPATCHED> extends Route {

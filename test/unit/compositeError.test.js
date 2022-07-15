@@ -9,11 +9,11 @@ describe('compositeError', () => {
         const compositeError = createCompositeError();
         eq(
             compositeError.try(() => { return 123; }),
-            123
+            123,
         );
         eq(
             compositeError.try(() => {}),
-            undefined
+            undefined,
         );
         compositeError.maybeThrow(); // should not throw
     });
@@ -26,13 +26,13 @@ describe('compositeError', () => {
 
         compositeError.try(() => { throw expectedErrors[0]; });
         const error = throws(() =>
-            compositeError.maybeThrow('CompositeErrorFoo', 'Composite error from a test case', 123, 'foo')
+            compositeError.maybeThrow('CompositeErrorFoo', 'Composite error from a test case', 123, 'foo'),
         );
         eq(error.name, 'CompositeErrorFoo');
         eq(
             error.message,
             'Composite error from a test case123foo\n' +
-            '  Error: Error from test case: ABC'
+            '  Error: Error from test case: ABC',
         );
         eq(error.errors.length, 1);
         eq(error.errors[0], expectedErrors[0]);
@@ -54,7 +54,7 @@ describe('compositeError', () => {
         compositeError.try(() => {throw expectedErrors[3];});
         compositeError.try(() => {throw expectedErrors[4];});
         const error = throws(() =>
-            compositeError.maybeThrow('CompositeErrorFoo', 'Composite error from a test case', 123, 'foo')
+            compositeError.maybeThrow('CompositeErrorFoo', 'Composite error from a test case', 123, 'foo'),
         );
         eq(error.name, 'CompositeErrorFoo');
         eq(
@@ -64,7 +64,7 @@ describe('compositeError', () => {
             '  Error: Error from test case: DEF\n' +
             '  Error: Error from test case: GHJ\n' +
             '  Error: Error from test case: KLM\n' +
-            '  Error: Error from test case: NOP'
+            '  Error: Error from test case: NOP',
         );
         eq(error.errors.length, 5);
         eq(error.errors[0], expectedErrors[0]);
@@ -92,7 +92,7 @@ describe('compositeError', () => {
         compositeError.try(() => {throw expectedErrors[4];});
         compositeError.try(() => {throw expectedErrors[5];});
         const error = throws(() =>
-            compositeError.maybeThrow('CompositeErrorFoo', 'Composite error from a test case', 123, 'foo')
+            compositeError.maybeThrow('CompositeErrorFoo', 'Composite error from a test case', 123, 'foo'),
         );
         eq(error.name, 'CompositeErrorFoo');
         eq(
@@ -103,7 +103,7 @@ describe('compositeError', () => {
             '  Error: Error from test case: GHJ\n' +
             '  Error: Error from test case: KLM\n' +
             '  Error: Error from test case: NOP\n' +
-            '  ...'
+            '  ...',
         );
         eq(error.errors.length, 6);
         eq(error.errors[0], expectedErrors[0]);

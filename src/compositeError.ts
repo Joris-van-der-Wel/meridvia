@@ -6,11 +6,11 @@ export interface CompositeErrorTracker {
 }
 
 export interface CompositeError extends Error {
-    errors: Error[];
+    errors: unknown[];
 }
 
 export const createCompositeError = (): CompositeErrorTracker => {
-    const errors: Error[] = [];
+    const errors: unknown[] = [];
     return {
         try: <T>(callback: () => T): T | void => {
             try {

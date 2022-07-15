@@ -1,0 +1,9 @@
+{
+    "extends": "./tsconfig.json",
+    "compilerOptions": {
+        "outDir": "./test-generated/integration/reduxAndRouter5/lib"
+    },
+    "include": [
+        "./test/integration/reduxAndRouter5/src/**/*"
+    ]
+}

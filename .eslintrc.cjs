@@ -1,4 +1,6 @@
-{
+const path = require('path');
+
+module.exports = {
     "env": {
         "commonjs": true,
         "es6": true
@@ -79,7 +81,6 @@
         "import/default": "error",
         "import/export": "error",
         "import/first": "error",
-        "import/named": "error",
         "import/namespace": "error",
         "import/newline-after-import": "error",
         "import/no-absolute-path": "error",
@@ -344,5 +345,53 @@
             "error",
             "never"
         ]
-    }
+    },
+
+    "overrides": [
+        {
+            "files": ["*.ts"],
+            "parser": "@typescript-eslint/parser",
+            "parserOptions": {
+                "tsconfigRootDir": __dirname,
+                "project": [
+                    "tsconfig.json",
+                    "tsconfig.integration-redux.json"
+                ],
+                "sourceType": "module"
+            },
+            "plugins": ["@typescript-eslint"],
+            "rules": {
+                "@typescript-eslint/adjacent-overload-signatures": "error",
+                "@typescript-eslint/array-type": "error",
+                "@typescript-eslint/await-thenable": "error",
+                "@typescript-eslint/ban-types": "error",
+                "@typescript-eslint/ban-ts-comment": "error",
+                "camelcase": "off",
+                "@typescript-eslint/naming-convention": "error",
+                "@typescript-eslint/explicit-function-return-type": "error",
+                "@typescript-eslint/explicit-member-accessibility": "error",
+                "indent": "off",
+                "@typescript-eslint/indent": "error",
+                "@typescript-eslint/member-delimiter-style": "error",
+                "@typescript-eslint/consistent-type-assertions": "error",
+                "no-array-constructor": "off",
+                "@typescript-eslint/no-array-constructor": "error",
+                "@typescript-eslint/no-empty-interface": "error",
+                "@typescript-eslint/no-inferrable-types": "error",
+                "@typescript-eslint/no-misused-new": "error",
+                "@typescript-eslint/no-namespace": "error",
+                "@typescript-eslint/no-non-null-assertion": "error",
+                "@typescript-eslint/no-parameter-properties": "error",
+                "@typescript-eslint/no-require-imports": "error",
+                "@typescript-eslint/triple-slash-reference": "error",
+                "no-unused-vars": "off",
+                "@typescript-eslint/no-unused-vars": "error",
+                "@typescript-eslint/no-use-before-define": "error",
+                "@typescript-eslint/no-var-requires": "error",
+                "@typescript-eslint/consistent-type-definitions": "error",
+                "@typescript-eslint/prefer-namespace-keyword": "error",
+                "@typescript-eslint/type-annotation-spacing": "error"
+            }
+        }
+    ]
 }

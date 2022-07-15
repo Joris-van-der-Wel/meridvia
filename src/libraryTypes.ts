@@ -8,28 +8,26 @@ export type TransactionCallback<DISPATCHED> = (request: TransactionRequest<DISPA
 
 export type Dispatcher<DISPATCHED, ACTION> = (action: ACTION) => DISPATCHED;
 
-export type UserStorage = object;
-export type ActionParams = object | Immutable.Map<string, any> | Immutable.Record.Class;
-export type InitStorageCallback = (params: ActionParams) => UserStorage;
+export type ActionParams = Record<string, any> | Immutable.Map<string, any> | Immutable.Record<any>;
+export type InitStorageCallback<STORAGE> = (params: ActionParams) => STORAGE;
 
-export interface FetchCallbackMeta {
-    storage: UserStorage;
+export interface FetchCallbackMeta<STORAGE> {
+    storage: STORAGE;
     invalidate: () => number;
     onCancel: (callback: () => void) => void;
 }
-export type FetchCallback<ACTION> = (params: ActionParams, meta: FetchCallbackMeta) => ACTION;
+export type FetchCallback<ACTION, STORAGE> = (params: ActionParams, meta: FetchCallbackMeta<STORAGE>) => ACTION;
 
-export interface ClearCallbackMeta {
-    storage: UserStorage;
+export interface ClearCallbackMeta<STORAGE> {
+    storage: STORAGE;
 }
-export type ClearCallback<ACTION> = (params: ActionParams, meta: ClearCallbackMeta) => ACTION;
+export type ClearCallback<ACTION, STORAGE> = (params: ActionParams, meta: ClearCallbackMeta<STORAGE>) => ACTION;
 
-
-export interface ResourceDefinition<ACTION> {
+export interface ResourceDefinition<ACTION, STORAGE> {
     name: string;
-    initStorage?: InitStorageCallback;
-    fetch: FetchCallback<ACTION>;
-    clear: ClearCallback<ACTION> | null;
+    initStorage?: InitStorageCallback<STORAGE>;
+    fetch: FetchCallback<ACTION, STORAGE>;
+    clear: ClearCallback<ACTION, STORAGE> | null;
     maximumStaleness?: number | string;
     maximumRejectedStaleness?: number | string;
     cacheMaxAge?: number | string;
@@ -55,8 +53,8 @@ export interface MeridviaSession<DISPATCHED>{
 export interface MeridviaManager<DISPATCHED, ACTION> {
     destroy(): void;
     createSession(options?: SessionOptions): MeridviaSession<DISPATCHED>;
-    resource(resource: ResourceDefinition<ACTION>): void;
-    resources(resource: ResourceDefinition<ACTION>[]): void;
+    resource(resource: ResourceDefinition<ACTION, any>): void;
+    resources(resource: ResourceDefinition<ACTION, any>[]): void;
     cleanupResources(): void;
     invalidate(resourceName?: string, params?: ActionParams): number;
     refresh(resourceName?: string, params?: ActionParams): number;

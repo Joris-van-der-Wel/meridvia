@@ -4,7 +4,7 @@ export class Timer {
     private _id: TimerHandle;
     public delay: number;
     public callback: () => void;
-    public setTimeout: (handler: Function, timeout: number) => TimerHandle;
+    public setTimeout: (handler: () => void, timeout: number) => TimerHandle;
     public clearTimeout: (handle: TimerHandle) => void;
     private readonly _timerCallback: () => void;
 
@@ -12,7 +12,7 @@ export class Timer {
         this._id = null;
         this.delay = delay;
         this.callback = callback;
-        this.setTimeout = (handler: Function, delay: number): TimerHandle => setTimeout(handler, delay);
+        this.setTimeout = (handler: () => void, delay: number): TimerHandle => setTimeout(handler, delay);
         this.clearTimeout = (handler: TimerHandle): void => clearTimeout(handler);
         this._timerCallback = (): void => {
             this._id = 0;

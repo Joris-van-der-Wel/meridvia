@@ -12,21 +12,26 @@ const meridvia = require('..');
 const getScript = async (path, iife = false) => {
     const fullPath = nodePath.resolve(path);
     const scriptSource = await fs.readFile(fullPath, 'utf8');
+
     const content = iife ? `(function(require) { 'use strict'; ${scriptSource}\n })(snippetRequire)` : scriptSource;
+    const script = new Script(content, {filename: fullPath});
+
     return {
-        script: new Script(content, {filename: fullPath}),
+        script,
         scriptSource,
     };
 };
 
-const reactScript = getScript(require.resolve('react/umd/react.development.js'));
-const reactDomScript = getScript(require.resolve('react-dom/umd/react-dom.development.js'));
-const reduxScript = getScript(require.resolve('redux/dist/redux.js'));
-const reactReduxScript = getScript(require.resolve('react-redux/dist/react-redux.js'));
+const nodeModulesPath = nodePath.resolve(__dirname, '..', 'node_modules');
+const reactScript = getScript(nodePath.resolve(nodeModulesPath, 'react', 'umd', 'react.development.js'));
+const reactDomScript = getScript(nodePath.resolve(nodeModulesPath, 'react-dom', 'umd/react-dom.development.js'));
+const reduxScript = getScript(nodePath.resolve(nodeModulesPath, 'redux', 'dist', 'redux.js'));
+const reactReduxScript = getScript(nodePath.resolve(nodeModulesPath, 'react-redux', 'dist', 'react-redux.js'));
 
 const runSnippet = async name => {
     const fileName = name + '.js';
     const fullPath = nodePath.join(__dirname, 'snippets', fileName);
+
     const {script, scriptSource} = await getScript(fullPath, true);
     let output = '';
 
@@ -35,11 +40,12 @@ const runSnippet = async name => {
         runScripts: 'dangerously',
     });
     const {window} = dom;
+    const vmContext = dom.getInternalVMContext();
 
-    dom.runVMScript((await reactScript).script);
-    dom.runVMScript((await reactDomScript).script);
-    dom.runVMScript((await reduxScript).script);
-    dom.runVMScript((await reactReduxScript).script);
+    (await reactScript).script.runInContext(vmContext);
+    (await reactDomScript).script.runInContext(vmContext);
+    (await reduxScript).script.runInContext(vmContext);
+    (await reactReduxScript).script.runInContext(vmContext);
 
     window.snippetRequire = name => {
         if (name === 'meridvia') {
@@ -48,7 +54,7 @@ const runSnippet = async name => {
         else if (name === 'react') {
             return dom.window.React;
         }
-        else if (name === 'react-dom') {
+        else if (name === 'react-dom/client') {
             return dom.window.ReactDOM;
         }
         else if (name === 'redux') {
@@ -91,8 +97,14 @@ const runSnippet = async name => {
         debug: log,
     };
 
-    const returnValue = dom.runVMScript(script);
-    await completionPromise;
+    const returnValue = script.runInContext(vmContext);
+
+    try {
+        await completionPromise;
+    }
+    catch (err) {
+        throw err;
+    }
 
     return {
         name,

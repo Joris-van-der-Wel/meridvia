@@ -91,7 +91,7 @@ export const fetchPosts = (params: object): AsyncActionThunk<ApiResult> => {
             dispatch(asyncActionSuccess('FETCH_POSTS', params, response));
             return response;
         }
-        catch (error) {
+        catch (error: any) {
             dispatch(asyncActionError('FETCH_POSTS', params, error));
             throw error;
         }
@@ -111,7 +111,7 @@ export const fetchComments = (params: object): AsyncActionThunk<ApiResult> => {
             dispatch(asyncActionSuccess('FETCH_COMMENTS', params, response));
             return response;
         }
-        catch (error) {
+        catch (error: any) {
             dispatch(asyncActionError('FETCH_COMMENTS', params, error));
             throw error;
         }

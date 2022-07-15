@@ -39,7 +39,7 @@ export class Session<DISPATCHED, ACTION> {
                 const abortedTransaction = this._activeTransaction;
                 abortedTransaction.abort(error(
                     'MeridviaTransactionAborted',
-                    'The session transaction has been aborted because a new session transaction has been started.'
+                    'The session transaction has been aborted because a new session transaction has been started.',
                 ));
 
                 // This transaction was incomplete, so we can not yet perform an accurate clean up of resources because
@@ -91,7 +91,7 @@ export class Session<DISPATCHED, ACTION> {
             // it's a promise, do not expire fetch() until the promise resolves/rejects
             return returnValue.then(
                 async (result: any): Promise<any> => { endTransaction(); return result; },
-                async (result: any): Promise<any> => { endTransaction(); throw result; }
+                async (result: any): Promise<any> => { endTransaction(); throw result; },
             );
         }
 
@@ -107,7 +107,7 @@ export class Session<DISPATCHED, ACTION> {
 
         const abortReason = error(
             'MeridviaTransactionAborted',
-            'The session transaction has been aborted because the session has been destroyed.'
+            'The session transaction has been aborted because the session has been destroyed.',
         );
 
         for (const transaction of iterateImmutable(this._transactionsToCleanUp)) {

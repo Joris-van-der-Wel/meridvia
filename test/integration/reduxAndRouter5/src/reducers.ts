@@ -37,7 +37,7 @@ interface CommentsByPostsState extends AsyncState {
 
 const postsReducer = (
     state: PostsBySubredditState = {status: 'pending'},
-    action: AsyncAction<FetchPostsResponse>
+    action: AsyncAction<FetchPostsResponse>,
 ): PostsBySubredditState => {
     if (isAsyncActionPending(action)) {
         return {
@@ -67,7 +67,7 @@ const postsReducer = (
 
 const commentsReducer = (
     state: CommentsByPostsState = {status: 'pending'},
-    action: AsyncAction<FetchCommentsResponse>
+    action: AsyncAction<FetchCommentsResponse>,
 ): CommentsByPostsState => {
     if (isAsyncActionPending(action)) {
         return {

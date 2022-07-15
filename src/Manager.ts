@@ -10,7 +10,6 @@ import {createCompositeError} from './compositeError';
 import {ResourceInstance} from './ResourceInstance';
 import {
     ActionParams,
-    UserStorage,
     Dispatcher,
     ResourceDefinition,
     ManagerOptions,
@@ -22,16 +21,16 @@ import {iterateImmutable, iterateImmutableValues} from './typing';
 
 const DEFAULT_DISPATCHER = <DISPATCHED, ACTION>(value: ACTION): DISPATCHED => value as any as DISPATCHED;
 const DEFAULT_PERIODIC_WORK_INTERVAL = 10000;
-const DEFAULT_INIT_STORAGE = (): UserStorage => ({});
+const DEFAULT_INIT_STORAGE = (): any => ({});
 
-type ResourceInstances<DISPATCHED, ACTION> = Immutable.Map<ResourceInstanceKey, ResourceInstance<DISPATCHED, ACTION>>;
+type ResourceInstances<DISPATCHED, ACTION> = Immutable.Map<ResourceInstanceKey, ResourceInstance<DISPATCHED, ACTION, any>>;
 
 export class Manager<DISPATCHED, ACTION> {
     public readonly dispatcher: Dispatcher<DISPATCHED, ACTION>;
     public readonly allowTransactionAbort: boolean;
     private _destroyed: boolean;
     private _sessions: Immutable.Set<MeridviaSession<DISPATCHED>>;
-    private _resources: Immutable.Map<string, Resource<ACTION>>;
+    private _resources: Immutable.Map<string, Resource<ACTION, any>>;
     private _resourceInstances: ResourceInstances<DISPATCHED, ACTION>;
     private readonly _periodicWorkTimer: Timer;
 
@@ -45,7 +44,7 @@ export class Manager<DISPATCHED, ACTION> {
         assert(
             typeof periodicWorkInterval === 'number' && Number.isFinite(periodicWorkInterval),
             'TypeError',
-            '`periodicWorkInterval` must be a finite number'
+            '`periodicWorkInterval` must be a finite number',
         );
         this.dispatcher = dispatcher;
         this.allowTransactionAbort = allowTransactionAbort;
@@ -87,7 +86,7 @@ export class Manager<DISPATCHED, ACTION> {
         this._sessions = this._sessions.delete(session);
     }
 
-    public registerResource(options: ResourceDefinition<ACTION>): void {
+    public registerResource(options: ResourceDefinition<ACTION, any>): void {
         assert(!this._destroyed, 'IllegalStateError', 'This manager has been destroyed');
         const {
             name,
@@ -120,16 +119,19 @@ export class Manager<DISPATCHED, ACTION> {
         this._resources = this._resources.set(name, resource);
     }
 
-    public getResource(name: string): Resource<ACTION> | null {
+    public getResource(name: string): Resource<ACTION, any> | null {
         assert(typeof name === 'string', 'TypeError', '`name` must be a string');
-        return this._resources.get(name);
+        return this._resources.get(name, null);
     }
 
-    public getResourceInstance(resourceInstanceKey: ResourceInstanceKey): ResourceInstance<DISPATCHED, ACTION> {
-        return this._resourceInstances.get(resourceInstanceKey);
+    public getResourceInstance(resourceInstanceKey: ResourceInstanceKey): ResourceInstance<DISPATCHED, ACTION, any> | null {
+        return this._resourceInstances.get(resourceInstanceKey, null);
     }
 
-    public setResourceInstance(resourceInstanceKey: ResourceInstanceKey, resourceInstance: ResourceInstance<DISPATCHED, ACTION>): void {
+    public setResourceInstance(
+        resourceInstanceKey: ResourceInstanceKey,
+        resourceInstance: ResourceInstance<DISPATCHED, ACTION, any>,
+    ): void {
         this._resourceInstances = this._resourceInstances.set(resourceInstanceKey, resourceInstance);
     }
 
@@ -191,8 +193,10 @@ export class Manager<DISPATCHED, ACTION> {
         this._periodicWorkTimer.schedule();
     }
 
-    public* findInstances(resourceName: string | undefined, params: ActionParams | undefined):
-    IterableIterator<ResourceInstance<DISPATCHED, ACTION>> {
+    public* findInstances(
+        resourceName: string | undefined,
+        params: ActionParams | undefined,
+    ): IterableIterator<ResourceInstance<DISPATCHED, ACTION, any>> {
         if (resourceName === undefined) {
             yield * iterateImmutableValues(this._resourceInstances);
             return;
@@ -256,7 +260,7 @@ export class Manager<DISPATCHED, ACTION> {
 
 export const createManager = <DISPATCHED, ACTION> (
     dispatcher: Dispatcher<DISPATCHED, ACTION> = DEFAULT_DISPATCHER,
-    options: ManagerOptions = {}
+    options: ManagerOptions = {},
 ): MeridviaManager<DISPATCHED, ACTION> => {
     const manager = new Manager(dispatcher, options);
 
@@ -264,8 +268,8 @@ export const createManager = <DISPATCHED, ACTION> (
     return {
         destroy: (): void => manager.destroy(),
         createSession: (options: SessionOptions = {}): MeridviaSession<DISPATCHED> => manager.createSession(options),
-        resource: (resource: ResourceDefinition<ACTION>): void => manager.registerResource(resource),
-        resources: (resources: ResourceDefinition<ACTION>[]): void => {
+        resource: (resource: ResourceDefinition<ACTION, any>): void => manager.registerResource(resource),
+        resources: (resources: ResourceDefinition<ACTION, any>[]): void => {
             for (const resource of resources) {
                 manager.registerResource(resource);
             }

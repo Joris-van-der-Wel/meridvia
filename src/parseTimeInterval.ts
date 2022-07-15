@@ -16,7 +16,7 @@ export const parseTimeInterval = (expression: string | number, validationAttribu
             validationAttribute,
             ': Time interval expression (',
             expression,
-            ') is in an incorrect format. Valid examples include: 100ms, 0.1s, 30m, 1h, 2d'
+            ') is in an incorrect format. Valid examples include: 100ms, 0.1s, 30m, 1h, 2d',
         );
     }
 

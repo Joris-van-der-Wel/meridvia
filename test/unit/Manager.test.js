@@ -174,7 +174,7 @@ describe('Manager', () => {
                 neq(
                     userResource.fetch.firstCall.args[0],
                     originalParams,
-                    'Should have shallow cloned the original params (to guard against changes)'
+                    'Should have shallow cloned the original params (to guard against changes)',
                 );
                 deq(result, {dispatched: {type: 'FETCH_USER', params: {id: 123}, result: {name: 'User Foo'}}});
             });
@@ -487,7 +487,7 @@ describe('Manager', () => {
                 await isRejected(
                     Promise.resolve().then(() => session(async request => {})),
                     Error,
-                    /previous.*transaction.*in.*progress/i
+                    /previous.*transaction.*in.*progress/i,
                 );
             });
         });
@@ -1672,7 +1672,7 @@ describe('Manager', () => {
                 error.message,
                 'refresh(): One or more fetch actions has thrown an error\n' +
                 '  Error: Error from test! foodResource.fetch()\n' +
-                '  Error: Error from test! foodResource.fetch()'
+                '  Error: Error from test! foodResource.fetch()',
             );
             eq(animalResource.fetch.callCount, 4);
             eq(foodResource.fetch.callCount, 4);

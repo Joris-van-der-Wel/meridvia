@@ -61,6 +61,7 @@ const runAllSnippets = async () => {
 
     const result = {};
     for (const name of names) {
+        console.log('*** Running snippet', name);
         result[name] = await runSnippet(name);
     }
     return result;
@@ -76,9 +77,13 @@ const makeFile = async (inputPath, outputPath) => {
     await fs.writeFile(outputPath, output);
 };
 
+process.on('unhandledRejection', (reason, promise) => {
+    console.log('Unhandled Rejection at:', promise, 'reason:', reason);
+});
+
 makeFile(
     path.resolve(__dirname, 'README.md'),
-    path.resolve(__dirname, '..', 'README.md')
+    path.resolve(__dirname, '..', 'README.md'),
 )
 .catch(err => {
     console.error('\nFailed to build the README!', err);

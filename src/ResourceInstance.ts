@@ -3,14 +3,13 @@ import {createDeferred, Deferred} from './deferred';
 import {ResourceInstanceKey} from './ResourceInstanceKey';
 import {Resource} from './Resource';
 import {Session} from './Session';
-import {UserStorage} from './libraryTypes';
 import {error} from './error';
 
 type ReturnValue<T> = {value: T} | {error: any};
 
-export class ResourceInstance<DISPATCHED, ACTION> {
+export class ResourceInstance<DISPATCHED, ACTION, STORAGE> {
     public readonly resourceInstanceKey: ResourceInstanceKey;
-    public readonly resource: Resource<ACTION>;
+    public readonly resource: Resource<ACTION, STORAGE>;
     public fetchReturnValue: ReturnValue<DISPATCHED> | null;
     public readonly activeForSessions: Set<Session<DISPATCHED, ACTION>>;
     public lastUsageMs: number;
@@ -19,10 +18,10 @@ export class ResourceInstance<DISPATCHED, ACTION> {
     public lastFetchRejected: boolean;
     public activeFetchIdentifier: symbol;
     public forceInvalidated: boolean;
-    public readonly userStorage: UserStorage;
-    public readonly deferredCleanupFetch: Deferred;
+    public readonly userStorage: STORAGE;
+    public readonly deferredCleanupFetch: Deferred<[]>;
 
-    public constructor(resourceInstanceKey: ResourceInstanceKey, resource: Resource<ACTION>, userStorage: UserStorage) {
+    public constructor(resourceInstanceKey: ResourceInstanceKey, resource: Resource<ACTION, STORAGE>, userStorage: STORAGE) {
         this.resourceInstanceKey = resourceInstanceKey;
         this.resource = resource;
         // the return value of dispatch(resource.fetch(...)) (including rejected promises and thrown errors):
@@ -161,7 +160,7 @@ export class ResourceInstance<DISPATCHED, ACTION> {
                 // eslint-disable-next-line no-console
                 if (typeof console === 'object' && typeof console.error === 'function')  {
                     // eslint-disable-next-line no-console
-                    console.error('Error while dispatching fetch action for', this.resource.name, 'resource:', err, err.stack);
+                    console.error('Error while dispatching fetch action for', this.resource.name, 'resource:', err);
                 }
             }
         }
@@ -182,7 +181,7 @@ export class ResourceInstance<DISPATCHED, ACTION> {
             // eslint-disable-next-line no-console
             if (typeof console === 'object' && typeof console.error === 'function')  {
                 // eslint-disable-next-line no-console
-                console.error('Error while dispatching clear action for', this.resource.name, 'resource:', err, err.stack);
+                console.error('Error while dispatching clear action for', this.resource.name, 'resource:', err);
             }
         }
     }

@@ -483,7 +483,7 @@ has to be refreshed periodically; Et cetera.
 */
 
 const {Component, createElement} = require('react');
-const ReactDOM = require('react-dom');
+const {createRoot} = require('react-dom/client');
 const {createManager} = require('meridvia');
 
 const myApi = {
@@ -585,7 +585,7 @@ class Hello extends Component {
     render() {
         const {user} = this.state;
         return createElement('div', {className: 'Hello'},
-            user ? `Hello ${user.name}` : 'Loading...'
+            user ? `Hello ${user.name}` : 'Loading...',
         );
         /* If you prefer JSX, this is what it would look like:
         return <div className="Hello">
@@ -601,6 +601,7 @@ const example = () => {
     // Create the container element used by react:
     const container = document.createElement('div');
     document.body.appendChild(container);
+    const reactRoot = createRoot(container);
 
     // create a DOM MutationObserver so that we can log
     // what the effects of the rendering are during this example
@@ -622,7 +623,7 @@ const example = () => {
             <Hello resourceManager={resourceManager} userId={userId} />
         );
         */
-        ReactDOM.render(element, container);
+        reactRoot.render(element);
     };
 
     console.log('First render...');
@@ -685,7 +686,7 @@ When data has to be refreshed periodically; Et cetera.
 */
 
 const {Component, createElement} = require('react');
-const ReactDOM = require('react-dom');
+const {createRoot} = require('react-dom/client');
 const {createStore, combineReducers, applyMiddleware} = require('redux');
 const {Provider: ReduxProvider, connect} = require('react-redux');
 const {default: promiseMiddleware} = require('redux-promise');
@@ -815,7 +816,7 @@ class Hello extends Component {
     render() {
         const {user} = this.props;
         return createElement('div', {className: 'Hello'},
-            user ? `Hello ${user.name}` : 'Loading...'
+            user ? `Hello ${user.name}` : 'Loading...',
         );
         /* If you prefer JSX, this is what it would look like:
         return <div className="Hello">
@@ -837,6 +838,7 @@ const example = () => {
     // Create the container element used by react:
     const container = document.createElement('div');
     document.body.appendChild(container);
+    const reactRoot = createRoot(container);
 
     // create a DOM MutationObserver so that we can log
     // what the effects of the rendering are during this example
@@ -852,14 +854,14 @@ const example = () => {
 
     const renderMyApp = userId => {
         const element = createElement(ReduxProvider, {store},
-            createElement(HelloContainer, {resourceManager, userId}, null)
+            createElement(HelloContainer, {resourceManager, userId}, null),
         );
         /* If you prefer JSX, this is what it would look like:
         const element = <ReduxProvider store={store}>
             <HelloContainer resourceManager={resourceManager} userId={userId} />
         </ReduxProvider>
         */
-        ReactDOM.render(element, container);
+        reactRoot.render(element);
     };
 
     console.log('First render...');

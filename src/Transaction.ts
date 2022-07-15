@@ -16,7 +16,7 @@ export class Transaction<DISPATCHED, ACTION> {
     private _aborted: Error | null;
     private _abortionPromise: ExplicitPromise<void, Error> | null;
     private _ended: boolean;
-    private _resourceInstances: Immutable.Set<ResourceInstance<DISPATCHED, ACTION>>;
+    private _resourceInstances: Immutable.Set<ResourceInstance<DISPATCHED, ACTION, any>>;
 
     public constructor(manager: Manager<DISPATCHED, ACTION>, session: Session<DISPATCHED, ACTION>, transactionBeginMs: number) {
         this._manager = manager;
@@ -40,7 +40,7 @@ export class Transaction<DISPATCHED, ACTION> {
             throw error(
                 'IllegalStateError',
                 'This request function is no longer valid. The transaction request() function should only be called during ' +
-                'a session transaction. For example: `mySession(request => { request("something") })`'
+                'a session transaction. For example: `mySession(request => { request("something") })`',
             );
         }
 
@@ -117,7 +117,9 @@ export class Transaction<DISPATCHED, ACTION> {
         for (const transaction of iterateImmutable(transactionsToCleanUp)) {
             previousInstancesSets.push(transaction._resourceInstances);
         }
-        const previousInstances = Immutable.Set().union(...previousInstancesSets) as Immutable.Set<ResourceInstance<DISPATCHED, ACTION>>;
+        const previousInstances = Immutable.Set().union(
+            ...previousInstancesSets,
+        ) as Immutable.Set<ResourceInstance<DISPATCHED, ACTION, any>>;
 
         const removedInstances = previousInstances.subtract(this._resourceInstances);
         for (const resourceInstance of iterateImmutable(removedInstances)) {

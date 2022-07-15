@@ -1,27 +1,27 @@
 import {ClearCallback, FetchCallback, InitStorageCallback} from './libraryTypes';
 
-interface ConstructorArgs<ACTION> {
+interface ConstructorArgs<ACTION, STORAGE> {
     name: string;
-    initStorage: InitStorageCallback;
-    fetch: FetchCallback<ACTION>;
-    clear: ClearCallback<ACTION> | null;
+    initStorage: InitStorageCallback<STORAGE>;
+    fetch: FetchCallback<ACTION, STORAGE>;
+    clear: ClearCallback<ACTION, STORAGE> | null;
     maximumStalenessMs: number;
     maximumRejectedStalenessMs: number;
     cacheMaxAgeMs: number;
     refreshIntervalMs: number;
 }
 
-export class Resource<ACTION> {
+export class Resource<ACTION, STORAGE> {
     public name: string;
-    public initStorage: InitStorageCallback;
-    public fetch: FetchCallback<ACTION>;
-    public clear: ClearCallback<ACTION> | null;
+    public initStorage: InitStorageCallback<STORAGE>;
+    public fetch: FetchCallback<ACTION, STORAGE>;
+    public clear: ClearCallback<ACTION, STORAGE> | null;
     public maximumStalenessMs: number;
     public maximumRejectedStalenessMs: number;
     public cacheMaxAgeMs: number;
     public refreshIntervalMs: number;
 
-    public constructor(args: ConstructorArgs<ACTION>) {
+    public constructor(args: ConstructorArgs<ACTION, STORAGE>) {
         this.name = args.name;
         this.initStorage = args.initStorage;
         this.fetch = args.fetch;

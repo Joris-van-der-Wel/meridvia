@@ -35,7 +35,7 @@ interface CreateResult {
 export const create = async (): Promise<CreateResult> => {
     const store = createStore(
         rootReducer,
-        applyMiddleware(reduxThunkMiddleware)
+        applyMiddleware(reduxThunkMiddleware),
     );
 
     // we need "as any" because redux's type definition for dispatch does not take middleware such as redux-thunk into
